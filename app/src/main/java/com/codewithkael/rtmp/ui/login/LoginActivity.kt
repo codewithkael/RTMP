@@ -2,8 +2,8 @@ package com.codewithkael.rtmp.ui.login
 
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -20,7 +20,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
-import android.provider.Settings
 
 @AndroidEntryPoint
 class LoginActivity : AppCompatActivity() {
@@ -31,7 +30,6 @@ class LoginActivity : AppCompatActivity() {
 
     @Inject
     lateinit var sharedPreference: MySharedPreference
-
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -56,38 +54,38 @@ class LoginActivity : AppCompatActivity() {
                         android.Manifest.permission.CAMERA, android.Manifest.permission.RECORD_AUDIO
                     ).request { allGranted, _, _ ->
                         if (allGranted) {
-//                            if (!Settings.canDrawOverlays(this@LoginActivity)) {
-//                                val intent = Intent(
-//                                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-//                                    Uri.parse("package:$packageName")
-//                                )
-//                                startActivity(intent)
-//                            }
-                            CoroutineScope(Dispatchers.IO).launch {
-                                try {
-                                    val result = userApi.login(
-                                        LoginBody(
-                                            username = usernameET.text.toString(),
-                                            password = passwordET.text.toString()
+                            if (!Settings.canDrawOverlays(this@LoginActivity)) {
+                                val intent = Intent(
+                                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                    Uri.parse("package:$packageName")
+                                )
+                                startActivity(intent)
+                            } else {
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    try {
+                                        val result = userApi.login(
+                                            LoginBody(
+                                                username = usernameET.text.toString(),
+                                                password = passwordET.text.toString()
+                                            )
                                         )
-                                    )
-                                    sharedPreference.setToken(result.token)
-                                    Log.d("TAG", "init: ${result.token}")
-                                    withContext(Dispatchers.Main) {
-                                        this@LoginActivity.startActivity(
-                                            Intent(this@LoginActivity, MainActivity::class.java)
-                                        )
-                                    }
-                                } catch (e: Exception) {
-                                    withContext(Dispatchers.Main) {
-                                        Toast.makeText(
-                                            this@LoginActivity,
-                                            "${e.message}", Toast.LENGTH_SHORT
-                                        ).show()
+                                        sharedPreference.setToken(result.token)
+                                        Log.d("TAG", "init: ${result.token}")
+                                        withContext(Dispatchers.Main) {
+                                            this@LoginActivity.startActivity(
+                                                Intent(this@LoginActivity, MainActivity::class.java)
+                                            )
+                                        }
+                                    } catch (e: Exception) {
+                                        withContext(Dispatchers.Main) {
+                                            Toast.makeText(
+                                                this@LoginActivity,
+                                                "${e.message}", Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
                                     }
                                 }
                             }
-
                         } else {
                             Toast.makeText(
                                 this@LoginActivity,

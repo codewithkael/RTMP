@@ -13,10 +13,11 @@ class MySharedPreference @Inject constructor(
     )
     private val prefsEditor: SharedPreferences.Editor = pref.edit()
 
-    fun setToken(token: String) {
+    fun setToken(token: String?) {
         prefsEditor.putString("token", token).apply()
     }
 
     fun getToken(): String? = pref.getString("token", null)
+
 
 }

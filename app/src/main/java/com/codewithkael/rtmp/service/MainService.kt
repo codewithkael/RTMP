@@ -6,9 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
-import android.os.Binder
 import android.os.Build
-import android.os.IBinder
 import android.util.Log
 import android.view.Gravity
 import android.view.WindowManager
@@ -20,13 +18,13 @@ import com.codewithkael.rtmp.utils.RtmpClient
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
-class MainService : LifecycleService(),FrameLayoutProvider  {
-    private var myFm:FrameLayout?=null
+class MainService : LifecycleService(), FrameLayoutProvider {
+    private var myFm: FrameLayout? = null
 
     private var isServiceRunning = false
     private lateinit var notificationManager: NotificationManager
 
-    private var rtmpClient: RtmpClient?=null
+    private var rtmpClient: RtmpClient? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -35,8 +33,8 @@ class MainService : LifecycleService(),FrameLayoutProvider  {
         )
         myFm = FrameLayout(this)
         val params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
+            1,
+            1,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, // This type is suitable for overlays
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
@@ -98,7 +96,7 @@ class MainService : LifecycleService(),FrameLayoutProvider  {
                 Log.d("TAG", "handleStartService: 1")
                 rtmpClient = RtmpClient(this@MainService, it)
                 rtmpClient?.startStreaming(key)
-            }?: kotlin.run {
+            } ?: kotlin.run {
                 Log.d("TAG", "handleStartService: 2")
                 handleStopService()
             }

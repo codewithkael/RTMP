@@ -34,12 +34,12 @@ class RtmpClient constructor(
             setVideoCodecParam(
                 NodePublisher.NMC_CODEC_ID_H264,
                 NodePublisher.NMC_PROFILE_AUTO,
-                320,   // Width (pixels)
-                480,   // Height (pixels)
+                640,   // Width (pixels)
+                960,   // Height (pixels)
                 30,     // Frame rate (fps)
-                1_000_000 // Bit rate (bps)
+                3_000_000 // Bit rate (bps)
             )
-            openCamera(true)
+            openCamera(false)
         }
     }
 

@@ -3,6 +3,7 @@ package com.codewithkael.rtmp.remote
 import com.codewithkael.rtmp.remote.models.GetStreamKeyResponse
 import com.codewithkael.rtmp.remote.models.LoginBody
 import com.codewithkael.rtmp.remote.models.LoginResponse
+import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -15,6 +16,6 @@ interface UserApi {
     ): LoginResponse
 
     @GET("stream-key")
-    suspend fun getStreamKey(): GetStreamKeyResponse
+    suspend fun getStreamKey(): Response<GetStreamKeyResponse>
 
 }
