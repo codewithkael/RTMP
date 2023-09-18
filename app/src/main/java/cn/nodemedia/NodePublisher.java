@@ -73,8 +73,8 @@ public class NodePublisher {
     private long fpsTime;
     private boolean isOpenFrontCamera = false;
     private int videoOrientation = Surface.ROTATION_0;
-    private int videoWidth = 720;
-    private int videoHeight = 1280;
+    private int videoWidth = 1;
+    private int videoHeight = 1;
     private int cameraWidth = 0;
     private int cameraHeight = 0;
     private int surfaceWidth = 0;

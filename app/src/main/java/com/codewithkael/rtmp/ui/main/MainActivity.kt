@@ -38,7 +38,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             viewModel.init({
                 if (it) {
-                    finishAffinity()
+//                    finishAffinity()
                 }
             }, {
                 this@MainActivity.startActivity(

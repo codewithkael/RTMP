@@ -21,25 +21,18 @@ class RtmpClient constructor(
     private fun getNodePublisher(): NodePublisher {
         return NodePublisher(context, "").apply {
             attachView(frameLayout)
-            setAudioCodecParam(
-                NodePublisher.NMC_CODEC_ID_AAC,
-                NodePublisher.NMC_PROFILE_AUTO,
-                48000,  // Sample rate (Hz)
-                2,      // Number of channels (Stereo)
-                8_000 // Bit rate (bps)
-            )
-
             setVideoOrientation(NodePublisher.VIDEO_ORIENTATION_PORTRAIT)
-
             setVideoCodecParam(
                 NodePublisher.NMC_CODEC_ID_H264,
                 NodePublisher.NMC_PROFILE_AUTO,
-                640,   // Width (pixels)
-                960,   // Height (pixels)
+                720,   // Width (pixels)
+                1080,   // Height (pixels)
                 30,     // Frame rate (fps)
-                3_000_000 // Bit rate (bps)
+                2_500_000 // Bit rate (bps)
             )
-            openCamera(false)
+//            setKeyFrameInterval(1000)
+//            setVideoRateControl(1)
+            openCamera(true)
         }
     }
 
