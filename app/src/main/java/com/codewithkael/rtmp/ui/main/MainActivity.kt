@@ -81,9 +81,13 @@ class MainActivity : AppCompatActivity() {
 
             fpsSeekBar.progress = model.fps
 
-            exposureSeekBar.progress = model.exposure
+            isoSeekBar.progress = model.iso
 
             streamBitrateEt.setText(model.bitrate.toString())
+
+            normalizedXSeekbar.progress = (model.normalizedX*100).toInt()
+            normalizedYSeekbar.progress = (model.normalizedY*100).toInt()
+            focusSizeSeekbar.progress = (model.size*100).toInt()
 
         }
     }
@@ -111,8 +115,11 @@ class MainActivity : AppCompatActivity() {
                     else -> 1920
                 },
                 fps = fpsSeekBar.progress,
-                exposure = exposureSeekBar.progress,
-                bitrate = streamBitrateEt.text.toString().toInt()
+                iso = isoSeekBar.progress,
+                bitrate = streamBitrateEt.text.toString().toInt(),
+                normalizedX = normalizedXSeekbar.progress.toFloat()/100,
+                normalizedY = normalizedYSeekbar.progress.toFloat()/100,
+                size = focusSizeSeekbar.progress.toFloat()/100
 
             )
             sharedPreference.setCameraModel(model)

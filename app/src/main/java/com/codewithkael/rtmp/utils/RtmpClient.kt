@@ -2,11 +2,8 @@ package com.codewithkael.rtmp.utils
 
 import android.content.Context
 import android.util.Log
-import android.util.Rational
 import android.widget.FrameLayout
 import androidx.camera.core.FocusMeteringAction
-import androidx.camera.core.MeteringPoint
-import androidx.camera.core.MeteringPointFactory
 import cn.nodemedia.NodePublisher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -95,7 +92,7 @@ class RtmpClient constructor(
                     delay(500)
                     nodePublisher?.camera?.cameraControl?.let { cameraControl ->
                         cameraControl.setZoomRatio(info.zoomLevel.toFloat())
-                        cameraControl.setExposureCompensationIndex(info.exposure)
+                        cameraControl.setExposureCompensationIndex(info.iso)
                     }
                 }
 
@@ -134,16 +131,13 @@ class RtmpClient constructor(
                     action?.let {
                         cameraControl.startFocusAndMetering(it)
                     }
-                    Log.d(TAG, "updateCameraStats: updateCameraState 1 ${currentCameraInfo?.frontCamera}")
-                    Log.d(TAG, "updateCameraStats: updateCameraState 2 ${info.frontCamera}")
-                    Log.d(TAG, "updateCameraStats: updateCameraState 3 ${!info.frontCamera && info.flashLight}")
 
                     if (currentCameraInfo?.frontCamera!=info.frontCamera){
                         nodePublisher?.switchCamera()
                     }
 
                     cameraControl.setZoomRatio(info.zoomLevel.toFloat())
-                    cameraControl.setExposureCompensationIndex(info.exposure)
+                    cameraControl.setExposureCompensationIndex(info.iso)
                     currentCameraInfo = info
                     CoroutineScope(Dispatchers.Main).launch {
                         delay(1000)

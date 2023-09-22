@@ -17,7 +17,7 @@ data class CameraInfoModel(
     val zoomLevel:Int=1,
 
     //-20 to 20
-    val exposure:Int=0,
+    val iso:Int=0,
 
     val width:Int=320,
     val height:Int=480,
@@ -32,4 +32,4 @@ data class CameraInfoModel(
     val normalizedY:Float = 0f,
     val size:Float = 0f,
 
-)
+    )
