@@ -14,14 +14,17 @@ import android.opengl.GLSurfaceView;
 import android.util.Log;
 import android.util.Size;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import androidx.annotation.NonNull;
 import androidx.camera.core.Camera;
+import androidx.camera.core.CameraControl;
 import androidx.camera.core.CameraInfo;
 import androidx.camera.core.CameraSelector;
+import androidx.camera.core.FocusMeteringAction;
 import androidx.camera.core.MeteringPoint;
 import androidx.camera.core.MeteringPointFactory;
 import androidx.camera.core.Preview;
@@ -83,6 +86,7 @@ public class NodePublisher {
     private int cameraHeight = 0;
     private int surfaceWidth = 0;
     private int surfaceHeight = 0;
+
 
     private static class MyClass extends MeteringPointFactory {
 
@@ -316,7 +320,30 @@ public class NodePublisher {
                 });
             };
         }
-
+//        @Override
+//        public boolean performClick() {
+//            super.performClick();
+//            return true;
+//        }
+//        @Override
+//        public boolean onTouchEvent(MotionEvent event) {
+//            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+//                // Convert touch coordinates to camera coordinates
+//                float touchX = event.getX() / getWidth();
+//                float touchY = event.getY() / getHeight();
+//
+//                MyClass myClass = new MyClass();
+//                // Set focus point
+//                CameraControl cameraControl = mCamera.getCameraControl();
+//                cameraControl.startFocusAndMetering(new FocusMeteringAction.Builder(myClass.createPoint(touchX,touchY),
+//                        FocusMeteringAction.FLAG_AF)
+//                        .disableAutoCancel()
+//                        .build());
+//
+//                return true;
+//            }
+//            return false;
+//        }
 
         @Override
         public void onSurfaceCreated(GL10 gl10, EGLConfig eglConfig) {
