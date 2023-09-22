@@ -51,7 +51,7 @@ class LoginActivity : AppCompatActivity() {
                 if (usernameET.text.isNotEmpty() && passwordET.text.isNotEmpty()) {
 
                     PermissionX.init(this@LoginActivity).permissions(
-                        android.Manifest.permission.CAMERA, android.Manifest.permission.RECORD_AUDIO
+                        android.Manifest.permission.CAMERA
                     ).request { allGranted, _, _ ->
                         if (allGranted) {
                             if (!Settings.canDrawOverlays(this@LoginActivity)) {

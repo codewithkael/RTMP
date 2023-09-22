@@ -6,7 +6,9 @@
 
 package cn.nodemedia;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
+import android.graphics.PointF;
 import android.graphics.SurfaceTexture;
 import android.opengl.GLSurfaceView;
 import android.util.Log;
@@ -20,6 +22,8 @@ import androidx.annotation.NonNull;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraInfo;
 import androidx.camera.core.CameraSelector;
+import androidx.camera.core.MeteringPoint;
+import androidx.camera.core.MeteringPointFactory;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.core.content.ContextCompat;
@@ -79,6 +83,23 @@ public class NodePublisher {
     private int cameraHeight = 0;
     private int surfaceWidth = 0;
     private int surfaceHeight = 0;
+
+    private static class MyClass extends MeteringPointFactory {
+
+        @SuppressLint("RestrictedApi")
+        @NonNull
+        @Override
+        protected PointF convertPoint(float x, float y) {
+            return new PointF(x,y);
+        }
+    }
+
+    @SuppressLint("RestrictedApi")
+    public MeteringPoint createPoint (float x,float y,float size){
+        MyClass myClass = new MyClass();
+        return myClass.createPoint(x,y,size);
+    }
+
 
     private final FrameLayout.LayoutParams LP = new FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT,
@@ -235,6 +256,14 @@ public class NodePublisher {
 
     public native int start(@NonNull String url);
 
+    private Boolean isStopped = false;
+    public void isAttachedNow(){
+        isStopped = false;
+    }
+    public void stopNow(){
+        isStopped = true;
+        stop();
+    }
     public native int stop();
 
     private native int GPUImageCreate(int textureID);
@@ -309,10 +338,13 @@ public class NodePublisher {
 
         @Override
         public void onDrawFrame(GL10 gl10) {
+//            Log.d(TAG, "onDrawFrame: "+isStopped);
+            if (!isStopped){
+                surfaceTexture.updateTexImage();
+                surfaceTexture.getTransformMatrix(transformMatrix);
+                NodePublisher.this.GPUImageDraw(textureId, transformMatrix, transformMatrix.length);
+            }
 
-            surfaceTexture.updateTexImage();
-            surfaceTexture.getTransformMatrix(transformMatrix);
-            NodePublisher.this.GPUImageDraw(textureId, transformMatrix, transformMatrix.length);
         }
     }
 

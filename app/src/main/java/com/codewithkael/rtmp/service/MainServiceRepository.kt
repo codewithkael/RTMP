@@ -2,9 +2,7 @@ package com.codewithkael.rtmp.service
 
 import android.content.Context
 import android.content.Intent
-import android.content.ServiceConnection
 import android.os.Build
-import android.widget.FrameLayout
 import com.codewithkael.rtmp.remote.models.GetStreamKeyResponse
 import javax.inject.Inject
 
@@ -16,12 +14,16 @@ class MainServiceRepository @Inject constructor(
         Thread {
             val intent = Intent(context, MainService::class.java)
             intent.action = MainServiceActions.START_SERVICE.name
-            intent.putExtra("key",key.streamKey)
+            intent.putExtra("key", key.streamKey)
             startServiceIntent(intent)
         }.start()
     }
 
-
+    fun updateCamera() {
+        val intent = Intent(context, MainService::class.java)
+        intent.action = MainServiceActions.UPDATE_CAMERA.name
+        startServiceIntent(intent)
+    }
 
     fun stopService() {
         val intent = Intent(context, MainService::class.java)
