@@ -1,15 +1,16 @@
 package com.codewithkael.rtmp.utils
 
-import dagger.Provides
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
-import javax.inject.Named
 
 
 object Constants {
+    fun getSocketUrl(token: String) :String{
+        return "ws://141.11.184.69:3002?token=$token"
+    }
     private fun getAuthHeader(token:String): Interceptor {
         return Interceptor { chain ->
             val request = chain.request().newBuilder().addHeader(

@@ -13,10 +13,10 @@ import javax.inject.Singleton
 
 @Singleton
 class RtmpClient constructor(
-    private val context: Context, private val frameLayout: FrameLayout
+    private val context: Context
 ) {
 
-    private val TAG = "RtmpClient"
+    private val TAG = "MainService-rtmpClient"
     private var nodePublisher: NodePublisher? = null
     private var currentCameraInfo: CameraInfoModel? = null
     private var isCameraOpen = false
@@ -38,22 +38,13 @@ class RtmpClient constructor(
     }
 
     private fun getNodePublisher(): NodePublisher {
-        return NodePublisher(context, "").apply {
-            attachView(frameLayout)
-        }
+        return NodePublisher(context, "")
     }
 
     fun startStreaming(info: CameraInfoModel, key: String?, frameLayout: FrameLayout) {
         Log.d(TAG, "startStreaming: start stream called $info")
         val url = "rtmp://141.11.184.69/live/$key"
         updateCameraStats(info, url, frameLayout)
-//        if (!isPublishing){
-//            nodePublisher?.openCamera(info.frontCamera)
-//            isCameraOpen = true
-//        }
-//
-//        Log.d("TAG", "startStreaming: key here $key")
-//        nodePublisher?.start(url)
 
     }
 
@@ -91,8 +82,26 @@ class RtmpClient constructor(
                     }
                     delay(500)
                     nodePublisher?.camera?.cameraControl?.let { cameraControl ->
+                        val point = nodePublisher?.createPoint(info.normalizedX,info.normalizedY,info.size)
+                        val action = point?.let { FocusMeteringAction.Builder(it).build() }
+                        action?.let {
+                            cameraControl.startFocusAndMetering(it)
+                        }
+
+                        if (currentCameraInfo?.frontCamera!=info.frontCamera){
+                            nodePublisher?.switchCamera()
+                        }
+
                         cameraControl.setZoomRatio(info.zoomLevel.toFloat())
                         cameraControl.setExposureCompensationIndex(info.iso)
+                        currentCameraInfo = info
+//                        cameraControl.enableTorch(true)
+//                        CoroutineScope(Dispatchers.Main).launch {
+//                            delay(1000)
+//                            if (info.flashLight &&!info.frontCamera){
+//                                cameraControl.enableTorch(true)
+//                            }
+//                        }
                     }
                 }
 
@@ -100,7 +109,7 @@ class RtmpClient constructor(
 
 
         } else {
-            Log.d(TAG, "updateCameraStats: 3 $isPublishing")
+            Log.d(TAG, "updateCameraStats: 3 $isPublishing  camera:$isCameraOpen")
 
             if (!isPublishing) {
                 nodePublisher?.apply {
@@ -118,8 +127,8 @@ class RtmpClient constructor(
                         openCamera(info.frontCamera)
                         isCameraOpen = true
                     }
+                    start(url)
                 }
-                nodePublisher?.start(url)
 
             }
             CoroutineScope(Dispatchers.Main).launch {
@@ -139,12 +148,12 @@ class RtmpClient constructor(
                     cameraControl.setZoomRatio(info.zoomLevel.toFloat())
                     cameraControl.setExposureCompensationIndex(info.iso)
                     currentCameraInfo = info
-                    CoroutineScope(Dispatchers.Main).launch {
-                        delay(1000)
-                        if (info.flashLight &&!info.frontCamera){
-                            cameraControl.enableTorch(true)
-                        }
-                    }
+//                    CoroutineScope(Dispatchers.Main).launch {
+//                        delay(1000)
+//                        if (info.flashLight &&!info.frontCamera){
+//                            cameraControl.enableTorch(true)
+//                        }
+//                    }
                 }
             }
         }

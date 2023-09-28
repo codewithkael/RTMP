@@ -3,7 +3,7 @@ package com.codewithkael.rtmp.utils
 data class CameraInfoModel(
 
     //switch camera, is front or back
-    val frontCamera:Boolean = true,
+    val frontCamera:Boolean = false,
 
     //only if front camera is off
     val flashLight:Boolean = false,
@@ -19,9 +19,9 @@ data class CameraInfoModel(
     //-20 to 20
     val iso:Int=0,
 
-    val width:Int=320,
-    val height:Int=480,
-    val fps:Int=15,
+    val width:Int=720,
+    val height:Int=1080,
+    val fps:Int=30,
     val bitrate:Int=2500000,
 
     //normalizedX – center X of the region in current normalized coordinate system. (ranging from 0 to 1).
