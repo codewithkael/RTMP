@@ -73,7 +73,7 @@ class RtmpClient constructor(
                             NodePublisher.NMC_PROFILE_AUTO,
                             info.width,   // Width (pixels)
                             info.height,   // Height (pixels)
-                            info.fps,     // Frame rate (fps)
+                            if (info.fps<15) 15 else info.fps,
                             info.bitrate // Bit rate (bps)
                         )
                         openCamera(info.frontCamera)
@@ -120,7 +120,7 @@ class RtmpClient constructor(
                         NodePublisher.NMC_PROFILE_AUTO,
                         info.width,   // Width (pixels)
                         info.height,   // Height (pixels)
-                        info.fps,     // Frame rate (fps)
+                        if (info.fps<15) 15 else info.fps,
                         info.bitrate // Bit rate (bps)
                     )
                     if (!isCameraOpen) {

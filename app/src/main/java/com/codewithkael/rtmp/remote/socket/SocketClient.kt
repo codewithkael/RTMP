@@ -1,5 +1,6 @@
 package com.codewithkael.rtmp.remote.socket
 
+import android.util.Log
 import com.codewithkael.rtmp.local.MySharedPreference
 import com.codewithkael.rtmp.utils.Constants
 import kotlinx.coroutines.CoroutineScope
@@ -22,6 +23,7 @@ class SocketClient @Inject constructor(
     private val preference: MySharedPreference
 ) {
 
+    private val TAG = "MainService-socket"
     companion object {
         private var socket: WebSocketClient? = null
     }
@@ -30,6 +32,7 @@ class SocketClient @Inject constructor(
     private var listener: Listener? = null
 
     fun initialize(listener: Listener) {
+        Log.d(TAG, "initialize: ${Constants.getSocketUrl(preference.getToken()!!)}")
         CoroutineScope(Dispatchers.IO).launch {
 
             try {
@@ -37,7 +40,7 @@ class SocketClient @Inject constructor(
                     WebSocketClient(URI(Constants.getSocketUrl(preference.getToken()!!))) {
                     override fun onOpen(handshakedata: ServerHandshake?) {
                         listener.onConnectionStateChanged(SocketState.Connected)
-
+                        Log.d(TAG, "onOpen: connected")
                     }
 
                     override fun onMessage(message: String?) {
@@ -48,6 +51,7 @@ class SocketClient @Inject constructor(
 
                     override fun onClose(code: Int, reason: String?, remote: Boolean) {
                         listener.onConnectionStateChanged(SocketState.Connecting)
+                        Log.d(TAG, "onClose: closed")
                         job.launch {
                             delay(5000)
                             initialize(listener)
@@ -55,7 +59,12 @@ class SocketClient @Inject constructor(
                     }
 
                     override fun onError(ex: java.lang.Exception?) {
-                        listener?.onConnectionStateChanged(SocketState.Connecting)
+                        Log.d(TAG, "onError: error $ex")
+                        job.launch {
+                            delay(5000)
+                            initialize(listener)
+                        }
+                        listener.onConnectionStateChanged(SocketState.Connecting)
                     }
 
                 }

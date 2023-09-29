@@ -100,6 +100,8 @@ class MainService : LifecycleService() {
 
     private fun handleStopService() {
         isServiceRunning = false
+        socketClient.unregisterClients()
+        socketClient.closeSocket()
         stopSelf()
         notificationManager.cancelAll()
         rtmpClient?.onDestroy()
