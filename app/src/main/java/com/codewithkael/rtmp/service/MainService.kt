@@ -10,7 +10,6 @@ import android.graphics.PixelFormat
 import android.os.Build
 import android.util.Log
 import android.view.Gravity
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.WindowManager
 import android.widget.FrameLayout
 import androidx.annotation.RequiresApi
@@ -22,6 +21,7 @@ import com.codewithkael.rtmp.remote.UserApi
 import com.codewithkael.rtmp.remote.socket.SocketClient
 import com.codewithkael.rtmp.remote.socket.SocketState
 import com.codewithkael.rtmp.ui.main.MainActivity
+import com.codewithkael.rtmp.utils.CameraInfoModel
 import com.codewithkael.rtmp.utils.Constants
 import com.codewithkael.rtmp.utils.RtmpClient
 import dagger.hilt.android.AndroidEntryPoint
@@ -40,6 +40,7 @@ class MainService : LifecycleService() {
     companion object {
         var isServiceRunning = false
         var isUiActive = true
+        var listener : Listener?=null
     }
 
     private var myFm: FrameLayout? = null
@@ -99,14 +100,22 @@ class MainService : LifecycleService() {
         val info = mySharedPreference.getCameraModel()
         myFm?.let { frameLayout-> rtmpClient?.startStreaming(info, key, frameLayout){
             if (!isUiActive&&!it){
-                startActivity(Intent(this@MainService,MainActivity::class.java).apply {
-                    addFlags(FLAG_ACTIVITY_NEW_TASK)
-                })
-                rtmpClient?.startStreaming(info, key, frameLayout)
-            }
+            openAppReopenCamera(info,key,frameLayout)
             Log.d(tag, "onNewMessageReceived: camera is opened $it")
+            }
         } }
 
+    }
+
+    private fun openAppReopenCamera(info: CameraInfoModel, key: String?, frameLayout: FrameLayout) {
+            startActivity(Intent(this@MainService,MainActivity::class.java).apply {
+                addFlags(FLAG_ACTIVITY_NEW_TASK)
+            })
+            rtmpClient?.startStreaming(info, key, frameLayout){
+                if (it){
+                    listener?.cameraOpenedSuccessfully()
+                }
+            }
     }
 
     private fun handleStopService() {
@@ -146,11 +155,7 @@ class MainService : LifecycleService() {
                                             cameraInfoModel, key, frameLayout
                                         ){
                                             if (!isUiActive&&!it){
-                                                startActivity(Intent(this@MainService,MainActivity::class.java).apply {
-                                                    addFlags(FLAG_ACTIVITY_NEW_TASK)
-                                                })
-                                                rtmpClient?.startStreaming(cameraInfoModel, key, frameLayout)
-
+                                                openAppReopenCamera(cameraInfoModel, key, frameLayout)
                                             }
                                             Log.d(tag, "onNewMessageReceived: camera is opened $it")
                                         }
@@ -164,11 +169,7 @@ class MainService : LifecycleService() {
                                             mySharedPreference.getCameraModel(), key, frameLayout
                                         ){
                                             if (!isUiActive&&!it){
-                                                startActivity(Intent(this@MainService,MainActivity::class.java).apply {
-                                                    addFlags(FLAG_ACTIVITY_NEW_TASK)
-                                                })
-                                                rtmpClient?.startStreaming(mySharedPreference.getCameraModel(), key, frameLayout)
-
+                                                openAppReopenCamera(mySharedPreference.getCameraModel(), key, frameLayout)
                                             }
                                             Log.d(tag, "onNewMessageReceived: camera is opened $it")
                                         }
@@ -194,10 +195,7 @@ class MainService : LifecycleService() {
                                         cameraInfo, key, frameLayout
                                     ){
                                         if (!isUiActive&&!it){
-                                            startActivity(Intent(this@MainService,MainActivity::class.java).apply {
-                                                addFlags(FLAG_ACTIVITY_NEW_TASK)
-                                            })
-                                            rtmpClient?.startStreaming(cameraInfo, key, frameLayout)
+                                           openAppReopenCamera(cameraInfo, key, frameLayout)
                                         }
                                         Log.d(tag, "onNewMessageReceived: camera is opened $it")
                                     }
@@ -236,6 +234,10 @@ class MainService : LifecycleService() {
 
             startForeground(1, notification.build())
         }
+    }
+
+    interface Listener{
+        fun cameraOpenedSuccessfully()
     }
 
 }

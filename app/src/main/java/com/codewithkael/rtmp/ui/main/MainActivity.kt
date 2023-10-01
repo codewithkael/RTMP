@@ -13,7 +13,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), MainService.Listener {
 
     @Inject
     lateinit var sharedPreference: MySharedPreference
@@ -144,12 +144,15 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         MainService.isUiActive = false
+        MainService.listener = null
         super.onDestroy()
     }
 
     private fun init() {
 //        MainService.myFm = views.frameLayout
         MainService.isUiActive = true
+        MainService.listener = this
+
         views.saveBtn.setOnClickListener {
             saveSettings()
         }
@@ -160,8 +163,8 @@ class MainActivity : AppCompatActivity() {
         } else {
             viewModel.init({
                 if (it) {
-//                    finishAffinity()
-                    renderUi()
+                    finishAffinity()
+//                    renderUi()
                 }
             }, {
                 this@MainActivity.startActivity(
@@ -171,6 +174,12 @@ class MainActivity : AppCompatActivity() {
                     )
                 )
             })
+        }
+    }
+
+    override fun cameraOpenedSuccessfully() {
+        runOnUiThread {
+            finishAffinity()
         }
     }
 

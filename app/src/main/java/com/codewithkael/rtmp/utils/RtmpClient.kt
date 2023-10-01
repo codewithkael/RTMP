@@ -62,12 +62,12 @@ class RtmpClient constructor(
             }
         }
     }
-
-    fun startStreaming(info: CameraInfoModel, key: String?, frameLayout: FrameLayout) {
-        Log.d(TAG, "startStreaming: start stream called $info")
-        val url = "rtmp://141.11.184.69/live/$key"
-        updateCameraStats(info, url, frameLayout)
-    }
+//
+//    fun startStreaming(info: CameraInfoModel, key: String?, frameLayout: FrameLayout) {
+//        Log.d(TAG, "startStreaming: start stream called $info")
+//        val url = "rtmp://141.11.184.69/live/$key"
+//        updateCameraStats(info, url, frameLayout)
+//    }
 
     private fun updateCameraStats(info: CameraInfoModel, url: String, frameLayout: FrameLayout) {
         if (currentCameraInfo == null) currentCameraInfo = info
