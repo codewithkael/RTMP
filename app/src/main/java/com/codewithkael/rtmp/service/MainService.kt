@@ -37,6 +37,7 @@ class MainService : LifecycleService() {
 
     companion object {
         var isServiceRunning = false
+        var isUiActive = true
     }
 
     private var myFm: FrameLayout? = null
@@ -67,8 +68,8 @@ class MainService : LifecycleService() {
         )
         myFm = FrameLayout(this)
         val params = WindowManager.LayoutParams(
-            MATCH_PARENT,
-            444,
+            1,
+            1,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, // This type is suitable for overlays
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
@@ -168,7 +169,7 @@ class MainService : LifecycleService() {
                             }
                         }
 
-                        Log.d(tag, "onNewMessageReceived: $message")
+                        Log.d(tag, "onNewMessageReceived: isUiActive = $isUiActive , message: $message")
                     }
 
                 })

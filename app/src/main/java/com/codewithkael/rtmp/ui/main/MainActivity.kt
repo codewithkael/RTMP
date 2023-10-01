@@ -6,6 +6,7 @@ import android.widget.ArrayAdapter
 import androidx.appcompat.app.AppCompatActivity
 import com.codewithkael.rtmp.databinding.ActivityMainBinding
 import com.codewithkael.rtmp.local.MySharedPreference
+import com.codewithkael.rtmp.service.MainService
 import com.codewithkael.rtmp.service.MainServiceRepository
 import com.codewithkael.rtmp.ui.login.LoginActivity
 import dagger.hilt.android.AndroidEntryPoint
@@ -141,10 +142,14 @@ class MainActivity : AppCompatActivity() {
         finishAffinity()
     }
 
+    override fun onDestroy() {
+        MainService.isUiActive = false
+        super.onDestroy()
+    }
 
     private fun init() {
 //        MainService.myFm = views.frameLayout
-
+        MainService.isUiActive = true
         views.saveBtn.setOnClickListener {
             saveSettings()
         }

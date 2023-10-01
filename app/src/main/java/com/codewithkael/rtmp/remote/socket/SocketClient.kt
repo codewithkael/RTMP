@@ -60,10 +60,10 @@ class SocketClient @Inject constructor(
 
                     override fun onError(ex: java.lang.Exception?) {
                         Log.d(TAG, "onError: error $ex")
-                        job.launch {
-                            delay(5000)
-                            initialize(listener)
-                        }
+//                        job.launch {
+//                            delay(5000)
+//                            initialize(listener)
+//                        }
                         listener.onConnectionStateChanged(SocketState.Connecting)
                     }
 

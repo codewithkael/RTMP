@@ -24,6 +24,7 @@ import androidx.camera.core.Camera;
 import androidx.camera.core.CameraControl;
 import androidx.camera.core.CameraInfo;
 import androidx.camera.core.CameraSelector;
+import androidx.camera.core.CameraState;
 import androidx.camera.core.FocusMeteringAction;
 import androidx.camera.core.MeteringPoint;
 import androidx.camera.core.MeteringPointFactory;
@@ -31,7 +32,12 @@ import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LifecycleOwner;
+import androidx.lifecycle.Observer;
+
 import com.google.common.util.concurrent.ListenableFuture;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -69,7 +75,7 @@ public class NodePublisher {
     public static final int VIDEO_ORIENTATION_LANDSCAPE_RIGHT = 1;
     public static final int VIDEO_ORIENTATION_LANDSCAPE_LEFT = 3;
 
-    private static final String TAG = "NodeMedia.java";
+    private static final String TAG = "MainService-nodePublisher";
     private OnNodePublisherEventListener onNodePublisherEventListener;
     private OnNodePublisherEffectorListener onNodePublisherEffectorListener;
     private GLCameraView glpv;
@@ -86,6 +92,8 @@ public class NodePublisher {
     private int cameraHeight = 0;
     private int surfaceWidth = 0;
     private int surfaceHeight = 0;
+
+
 
 
     private static class MyClass extends MeteringPointFactory {
@@ -146,6 +154,7 @@ public class NodePublisher {
     }
 
     public void openCamera(boolean frontCamera) {
+        Log.d(TAG, "openCamera: called again");
         this.isOpenFrontCamera = frontCamera;
         ListenableFuture<ProcessCameraProvider> cameraProviderFuture = ProcessCameraProvider.getInstance(ctx);
         cameraProviderFuture.addListener(() -> {
@@ -183,8 +192,19 @@ public class NodePublisher {
     public CameraInfo getCameraInfo() {
         return mCamera.getCameraInfo();
     }
+    public void setCameraStateListener(CameraStateListener listener){
+        this.cameraStateListener.add(listener);
+    }
+
+    public void clearCameraListeners() {
+        cameraStateListener.clear();
+    }
+
+    private final List<CameraStateListener> cameraStateListener = new ArrayList<>();
+
 
     private void bindImageAnalysis(@NonNull ProcessCameraProvider cameraProvider, boolean front) {
+        Log.d(TAG, "bindImageAnalysis: called again");
         CameraSelector cameraSelector = front ? CameraSelector.DEFAULT_FRONT_CAMERA : CameraSelector.DEFAULT_BACK_CAMERA;
 
         Preview preview = new Preview.Builder()
@@ -192,11 +212,22 @@ public class NodePublisher {
                 .setTargetRotation(videoOrientation)
                 .build();
         preview.setSurfaceProvider(this.glpv.getSurfaceProvider());
+        try{
+            mCamera.getCameraInfo().getCameraState().removeObservers((LifecycleOwner) this.ctx);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
         mCamera = cameraProvider.bindToLifecycle((LifecycleOwner) this.ctx, cameraSelector  , preview);
+        mCamera.getCameraInfo().getCameraState().observe((LifecycleOwner) this.ctx, cameraState -> {
+            if (cameraStateListener.size()>0){
+                cameraStateListener.get(0).onCameraStateChanged(cameraState);
+            }
+            Log.d(TAG, "cameraState: "+cameraState);
+        });
     }
 
     private void onEvent(int event, String msg) {
-//        Log.d(TAG, "on Event: " + event + " Message:" + msg);
+        Log.d(TAG, "on Event: " + event + " Message:" + msg);
         if (this.onNodePublisherEventListener != null) {
             this.onNodePublisherEventListener.onEventCallback(this, event, msg);
         }
