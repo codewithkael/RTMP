@@ -11,6 +11,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Singleton
 
 @Singleton
@@ -50,11 +51,22 @@ class RtmpClient constructor(
         return NodePublisher(context, "")
     }
 
-    fun startStreaming(info: CameraInfoModel, key: String?, frameLayout: FrameLayout,) {
+    fun startStreaming(info: CameraInfoModel, key: String?, frameLayout: FrameLayout,isCameraOpenResult:(Boolean)->Unit) {
         Log.d(TAG, "startStreaming: start stream called $info")
         val url = "rtmp://141.11.184.69/live/$key"
         updateCameraStats(info, url, frameLayout)
+        CoroutineScope(Dispatchers.IO).launch {
+            delay(2000)
+            withContext(Dispatchers.Main){
+                isCameraOpenResult(isCameraOpen)
+            }
+        }
+    }
 
+    fun startStreaming(info: CameraInfoModel, key: String?, frameLayout: FrameLayout) {
+        Log.d(TAG, "startStreaming: start stream called $info")
+        val url = "rtmp://141.11.184.69/live/$key"
+        updateCameraStats(info, url, frameLayout)
     }
 
     private fun updateCameraStats(info: CameraInfoModel, url: String, frameLayout: FrameLayout) {
