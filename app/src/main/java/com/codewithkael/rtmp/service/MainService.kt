@@ -97,6 +97,7 @@ class MainService : LifecycleService() {
     }
 
     private fun handleUpdateCamera() {
+        startServiceWithNotification()
         val info = mySharedPreference.getCameraModel()
         rtmpClient?.start(info, key) {
             if (!isUiActive && !it) {
@@ -119,6 +120,7 @@ class MainService : LifecycleService() {
     }
 
     private fun handleStopService() {
+        startServiceWithNotification()
         isServiceRunning = false
         socketClient.unregisterClients()
         socketClient.closeSocket()
