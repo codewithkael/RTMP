@@ -9,11 +9,25 @@ import com.codewithkael.rtmp.local.MySharedPreference
 import com.codewithkael.rtmp.service.MainService
 import com.codewithkael.rtmp.service.MainServiceRepository
 import com.codewithkael.rtmp.ui.login.LoginActivity
+import com.github.faucamp.simplertmp.RtmpHandler
 import dagger.hilt.android.AndroidEntryPoint
+import net.ossrs.yasea.SrsEncodeHandler
+import net.ossrs.yasea.SrsPublisher
+import net.ossrs.yasea.SrsRecordHandler
+import java.io.IOException
+import java.net.SocketException
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class MainActivity : AppCompatActivity(), MainService.Listener {
+class MainActivity : AppCompatActivity(), MainService.Listener, SrsEncodeHandler.SrsEncodeListener,
+    RtmpHandler.RtmpListener, SrsRecordHandler.SrsRecordListener {
+
+    private val rtmpUrl = "rtmp://141.11.184.69/live/kael"
+
+    private lateinit var mPublisher: SrsPublisher
+    val mWidth = 1920
+    val mHeight = 1080
+
 
     @Inject
     lateinit var sharedPreference: MySharedPreference
@@ -161,19 +175,30 @@ class MainActivity : AppCompatActivity(), MainService.Listener {
         if (sharedPreference.getToken().isNullOrEmpty()) {
             this@MainActivity.startActivity(Intent(this@MainActivity, LoginActivity::class.java))
         } else {
-            viewModel.init({
-                if (it) {
-                    finishAffinity()
-//                    renderUi()
-                }
-            }, {
-                this@MainActivity.startActivity(
-                    Intent(
-                        this@MainActivity,
-                        LoginActivity::class.java
-                    )
-                )
-            })
+
+            mPublisher = SrsPublisher(views.glsurfaceviewCamera)
+            mPublisher.setEncodeHandler(SrsEncodeHandler(this))
+            mPublisher.setRtmpHandler(RtmpHandler(this))
+            mPublisher.setRecordHandler(SrsRecordHandler(this))
+            mPublisher.setPreviewResolution(mWidth, mHeight)
+            mPublisher.setOutputResolution(mHeight, mWidth) // 这里要和preview反过来
+
+            mPublisher.setVideoHDMode()
+            mPublisher.startCamera()
+            mPublisher.startPublish(rtmpUrl)
+//            viewModel.init({
+//                if (it) {
+//                    finishAffinity()
+////                    renderUi()
+//                }
+//            }, {
+//                this@MainActivity.startActivity(
+//                    Intent(
+//                        this@MainActivity,
+//                        LoginActivity::class.java
+//                    )
+//                )
+//            })
         }
     }
 
@@ -181,6 +206,72 @@ class MainActivity : AppCompatActivity(), MainService.Listener {
         runOnUiThread {
             finishAffinity()
         }
+    }
+
+    override fun onNetworkWeak() {
+    }
+
+    override fun onNetworkResume() {
+    }
+
+    override fun onEncodeIllegalArgumentException(e: IllegalArgumentException?) {
+    }
+
+    override fun onRtmpConnecting(msg: String?) {
+    }
+
+    override fun onRtmpConnected(msg: String?) {
+    }
+
+    override fun onRtmpVideoStreaming() {
+    }
+
+    override fun onRtmpAudioStreaming() {
+    }
+
+    override fun onRtmpStopped() {
+    }
+
+    override fun onRtmpDisconnected() {
+    }
+
+    override fun onRtmpVideoFpsChanged(fps: Double) {
+    }
+
+    override fun onRtmpVideoBitrateChanged(bitrate: Double) {
+    }
+
+    override fun onRtmpAudioBitrateChanged(bitrate: Double) {
+    }
+
+    override fun onRtmpSocketException(e: SocketException?) {
+    }
+
+    override fun onRtmpIOException(e: IOException?) {
+    }
+
+    override fun onRtmpIllegalArgumentException(e: IllegalArgumentException?) {
+    }
+
+    override fun onRtmpIllegalStateException(e: IllegalStateException?) {
+    }
+
+    override fun onRecordPause() {
+    }
+
+    override fun onRecordResume() {
+    }
+
+    override fun onRecordStarted(msg: String?) {
+    }
+
+    override fun onRecordFinished(msg: String?) {
+    }
+
+    override fun onRecordIllegalArgumentException(e: IllegalArgumentException?) {
+    }
+
+    override fun onRecordIOException(e: IOException?) {
     }
 
 
