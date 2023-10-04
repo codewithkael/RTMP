@@ -11,7 +11,6 @@ import android.os.Build
 import android.util.Log
 import android.view.Gravity
 import android.view.WindowManager
-import android.widget.FrameLayout
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
@@ -23,13 +22,14 @@ import com.codewithkael.rtmp.remote.socket.SocketState
 import com.codewithkael.rtmp.ui.main.MainActivity
 import com.codewithkael.rtmp.utils.CameraInfoModel
 import com.codewithkael.rtmp.utils.Constants
-import com.codewithkael.rtmp.utils.RtmpClient
+import com.codewithkael.rtmp.utils.RtmpClient2
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import net.ossrs.yasea.SrsCameraView
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -43,7 +43,7 @@ class MainService : LifecycleService() {
         var listener : Listener?=null
     }
 
-    private var myFm: FrameLayout? = null
+    private var mySrsView: SrsCameraView? = null
 
 
     @Inject
@@ -59,7 +59,7 @@ class MainService : LifecycleService() {
 
     private lateinit var notificationManager: NotificationManager
 
-    private var rtmpClient: RtmpClient? = null
+    private var rtmpClient: RtmpClient2? = null
     private var key: String? = ""
 
 
@@ -69,7 +69,7 @@ class MainService : LifecycleService() {
         notificationManager = getSystemService(
             NotificationManager::class.java
         )
-        myFm = FrameLayout(this)
+        mySrsView = SrsCameraView(this)
         val params = WindowManager.LayoutParams(
             1,
             1,
@@ -79,7 +79,8 @@ class MainService : LifecycleService() {
         )
         params.gravity = Gravity.TOP or Gravity.START
         val windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        windowManager.addView(myFm, params)
+        windowManager.addView(mySrsView, params)
+        mySrsView?.keepScreenOn = true
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -98,20 +99,20 @@ class MainService : LifecycleService() {
 
     private fun handleUpdateCamera() {
         val info = mySharedPreference.getCameraModel()
-        myFm?.let { frameLayout-> rtmpClient?.startStreaming(info, key, frameLayout){
+         rtmpClient?.start(info, key){
             if (!isUiActive&&!it){
-            openAppReopenCamera(info,key,frameLayout)
-            Log.d(tag, "onNewMessageReceived: camera is opened $it")
+                openAppReopenCamera(info,key)
+                Log.d(tag, "onNewMessageReceived: camera is opened $it")
             }
-        } }
+        }
 
     }
 
-    private fun openAppReopenCamera(info: CameraInfoModel, key: String?, frameLayout: FrameLayout) {
+    private fun openAppReopenCamera(info: CameraInfoModel, key: String?) {
             startActivity(Intent(this@MainService,MainActivity::class.java).apply {
                 addFlags(FLAG_ACTIVITY_NEW_TASK)
             })
-            rtmpClient?.startStreaming(info, key, frameLayout){
+            rtmpClient?.start(info, key){
                 if (it){
                     listener?.cameraOpenedSuccessfully()
                 }
@@ -124,7 +125,7 @@ class MainService : LifecycleService() {
         socketClient.closeSocket()
         stopSelf()
         notificationManager.cancelAll()
-        rtmpClient?.onDestroy()
+//        rtmpClient?.onDestroy()
     }
 
     private fun handleStartService(incomingIntent: Intent) {
@@ -133,8 +134,8 @@ class MainService : LifecycleService() {
             isServiceRunning = true
             startServiceWithNotification()
             key = incomingIntent.getStringExtra("key")
-            myFm?.let { frameLayout ->
-                rtmpClient = RtmpClient(this@MainService)
+            mySrsView?.let { srsCameraView ->
+                rtmpClient = RtmpClient2(srsCameraView)
                 socketClient.initialize(object : SocketClient.Listener {
                     override fun onConnectionStateChanged(state: SocketState) {
                         if (state == SocketState.Connected) {
@@ -151,11 +152,11 @@ class MainService : LifecycleService() {
                                     Log.d(tag, "onConnectionStateChanged: 1")
                                     mySharedPreference.setCameraModel(cameraInfoModel)
                                     withContext(Dispatchers.Main) {
-                                        rtmpClient?.startStreaming(
-                                            cameraInfoModel, key, frameLayout
+                                        rtmpClient?.start(
+                                            cameraInfoModel, key
                                         ){
                                             if (!isUiActive&&!it){
-                                                openAppReopenCamera(cameraInfoModel, key, frameLayout)
+                                                openAppReopenCamera(cameraInfoModel, key)
                                             }
                                             Log.d(tag, "onNewMessageReceived: camera is opened $it")
                                         }
@@ -165,11 +166,11 @@ class MainService : LifecycleService() {
                                     Log.d(tag, "onConnectionStateChanged: 2")
                                     delay(1000)
                                     withContext(Dispatchers.Main) {
-                                        rtmpClient?.startStreaming(
-                                            mySharedPreference.getCameraModel(), key, frameLayout
+                                        rtmpClient?.start(
+                                            mySharedPreference.getCameraModel(), key
                                         ){
                                             if (!isUiActive&&!it){
-                                                openAppReopenCamera(mySharedPreference.getCameraModel(), key, frameLayout)
+                                                openAppReopenCamera(mySharedPreference.getCameraModel(), key)
                                             }
                                             Log.d(tag, "onNewMessageReceived: camera is opened $it")
                                         }
@@ -191,11 +192,11 @@ class MainService : LifecycleService() {
 
                             result?.let {cameraInfo ->
                                 withContext(Dispatchers.Main) {
-                                    rtmpClient?.startStreaming(
-                                        cameraInfo, key, frameLayout
+                                    rtmpClient?.start(
+                                        cameraInfo, key
                                     ){
                                         if (!isUiActive&&!it){
-                                           openAppReopenCamera(cameraInfo, key, frameLayout)
+                                           openAppReopenCamera(cameraInfo, key)
                                         }
                                         Log.d(tag, "onNewMessageReceived: camera is opened $it")
                                     }

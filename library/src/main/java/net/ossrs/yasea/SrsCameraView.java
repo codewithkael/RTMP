@@ -12,6 +12,7 @@ import android.opengl.Matrix;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Surface;
+import android.view.WindowManager;
 
 import com.seu.magicfilter.base.gpuimage.GPUImageFilter;
 import com.seu.magicfilter.utils.MagicFilterFactory;
@@ -22,6 +23,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.microedition.khronos.egl.EGLConfig;
@@ -226,7 +228,9 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
 
     protected int getRotateDeg() {
         try {
-            int rotate = ((Activity) getContext()).getWindowManager().getDefaultDisplay().getRotation();
+//            int rotate = ((Activity) getContext()).getWindowManager().getDefaultDisplay().getRotation();
+            int rotate = ((WindowManager) Objects.requireNonNull(getContext().getSystemService(Context.WINDOW_SERVICE))).getDefaultDisplay().getRotation();
+//            int rotate = ((Activity) getContext()).getWindowManager().getDefaultDisplay().getRotation();
             switch (rotate) {
                 case Surface.ROTATION_0:
                     return 0;
@@ -335,7 +339,7 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
                 return false;
             }
         }
-
+        mCamId = 0;
         Camera.Parameters params = mCamera.getParameters();
         //params.setPictureSize(mPreviewWidth, mPreviewHeight);
         params.setPreviewSize(mPreviewWidth, mPreviewHeight);
