@@ -16,4 +16,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "RTMP"
 include ':app'
-include ':library'

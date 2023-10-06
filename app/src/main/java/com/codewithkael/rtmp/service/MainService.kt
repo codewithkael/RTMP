@@ -10,9 +10,7 @@ import android.graphics.PixelFormat
 import android.os.Build
 import android.util.Log
 import android.view.Gravity
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.WindowManager
-import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
 import com.codewithkael.rtmp.R
@@ -23,8 +21,7 @@ import com.codewithkael.rtmp.remote.socket.SocketState
 import com.codewithkael.rtmp.ui.main.MainActivity
 import com.codewithkael.rtmp.utils.CameraInfoModel
 import com.codewithkael.rtmp.utils.Constants
-import com.codewithkael.rtmp.utils.ExposureMode
-import com.codewithkael.rtmp.utils.RtmpClient3
+import com.codewithkael.rtmp.utils.RtmpClient
 import com.haishinkit.view.HkSurfaceView
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -32,7 +29,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import net.ossrs.yasea.SrsCameraView
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -43,7 +39,7 @@ class MainService : LifecycleService() {
     companion object {
         var isServiceRunning = false
         var isUiActive = true
-        var listener : Listener?=null
+        var listener: Listener? = null
     }
 
     private var surface: HkSurfaceView? = null
@@ -62,7 +58,7 @@ class MainService : LifecycleService() {
 
     private lateinit var notificationManager: NotificationManager
 
-    private var rtmpClient: RtmpClient3? = null
+    private var rtmpClient: RtmpClient? = null
     private var key: String? = ""
 
 
@@ -101,9 +97,9 @@ class MainService : LifecycleService() {
 
     private fun handleUpdateCamera() {
         val info = mySharedPreference.getCameraModel()
-         rtmpClient?.start(info, key){
-            if (!isUiActive&&!it){
-                openAppReopenCamera(info,key)
+        rtmpClient?.start(info, key) {
+            if (!isUiActive && !it) {
+                openAppReopenCamera(info, key)
                 Log.d(tag, "onNewMessageReceived: camera is opened $it")
             }
         }
@@ -111,14 +107,14 @@ class MainService : LifecycleService() {
     }
 
     private fun openAppReopenCamera(info: CameraInfoModel, key: String?) {
-            startActivity(Intent(this@MainService,MainActivity::class.java).apply {
-                addFlags(FLAG_ACTIVITY_NEW_TASK)
-            })
-            rtmpClient?.start(info, key){
-                if (it){
-                    listener?.cameraOpenedSuccessfully()
-                }
+        startActivity(Intent(this@MainService, MainActivity::class.java).apply {
+            addFlags(FLAG_ACTIVITY_NEW_TASK)
+        })
+        rtmpClient?.start(info, key) {
+            if (it) {
+                listener?.cameraOpenedSuccessfully()
             }
+        }
     }
 
     private fun handleStopService() {
@@ -137,7 +133,7 @@ class MainService : LifecycleService() {
             startServiceWithNotification()
             key = incomingIntent.getStringExtra("key")
             surface?.let { srf ->
-                rtmpClient = RtmpClient3(this@MainService,srf)
+                rtmpClient = RtmpClient(this@MainService, srf)
                 val baseModel = CameraInfoModel()
 //                CoroutineScope(Dispatchers.Main).launch {
 //                    val totalDelay = 10000L
@@ -212,14 +208,14 @@ class MainService : LifecycleService() {
                                 }
 
                                 Log.d(tag, "onConnectionStateChanged: $result")
-                                result?.let {cameraInfoModel->
+                                result?.let { cameraInfoModel ->
                                     Log.d(tag, "onConnectionStateChanged: 1")
                                     mySharedPreference.setCameraModel(cameraInfoModel)
                                     withContext(Dispatchers.Main) {
                                         rtmpClient?.start(
                                             cameraInfoModel, key
-                                        ){
-                                            if (!isUiActive&&!it){
+                                        ) {
+                                            if (!isUiActive && !it) {
                                                 openAppReopenCamera(cameraInfoModel, key)
                                             }
                                             Log.d(tag, "onNewMessageReceived: camera is opened $it")
@@ -232,9 +228,12 @@ class MainService : LifecycleService() {
                                     withContext(Dispatchers.Main) {
                                         rtmpClient?.start(
                                             mySharedPreference.getCameraModel(), key
-                                        ){
-                                            if (!isUiActive&&!it){
-                                                openAppReopenCamera(mySharedPreference.getCameraModel(), key)
+                                        ) {
+                                            if (!isUiActive && !it) {
+                                                openAppReopenCamera(
+                                                    mySharedPreference.getCameraModel(),
+                                                    key
+                                                )
                                             }
                                             Log.d(tag, "onNewMessageReceived: camera is opened $it")
                                         }
@@ -254,13 +253,13 @@ class MainService : LifecycleService() {
                                 null
                             }
 
-                            result?.let {cameraInfo ->
+                            result?.let { cameraInfo ->
                                 withContext(Dispatchers.Main) {
                                     rtmpClient?.start(
                                         cameraInfo, key
-                                    ){
-                                        if (!isUiActive&&!it){
-                                           openAppReopenCamera(cameraInfo, key)
+                                    ) {
+                                        if (!isUiActive && !it) {
+                                            openAppReopenCamera(cameraInfo, key)
                                         }
                                         Log.d(tag, "onNewMessageReceived: camera is opened $it")
                                     }
@@ -268,7 +267,10 @@ class MainService : LifecycleService() {
                             }
                         }
 
-                        Log.d(tag, "onNewMessageReceived: isUiActive = $isUiActive , message: $message")
+                        Log.d(
+                            tag,
+                            "onNewMessageReceived: isUiActive = $isUiActive , message: $message"
+                        )
                     }
 
                 })
@@ -301,7 +303,7 @@ class MainService : LifecycleService() {
         }
     }
 
-    interface Listener{
+    interface Listener {
         fun cameraOpenedSuccessfully()
     }
 

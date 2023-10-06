@@ -2,8 +2,6 @@ package com.codewithkael.rtmp.ui.main
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
-import android.util.Range
 import android.widget.ArrayAdapter
 import androidx.appcompat.app.AppCompatActivity
 import com.codewithkael.rtmp.databinding.ActivityMainBinding
@@ -11,18 +9,11 @@ import com.codewithkael.rtmp.local.MySharedPreference
 import com.codewithkael.rtmp.service.MainService
 import com.codewithkael.rtmp.service.MainServiceRepository
 import com.codewithkael.rtmp.ui.login.LoginActivity
-import com.codewithkael.rtmp.utils.fromPercent
-import com.github.faucamp.simplertmp.RtmpHandler
 import dagger.hilt.android.AndroidEntryPoint
-import net.ossrs.yasea.SrsEncodeHandler
-import net.ossrs.yasea.SrsPublisher
-import net.ossrs.yasea.SrsRecordHandler
-import java.io.IOException
-import java.net.SocketException
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class MainActivity : AppCompatActivity(), MainService.Listener{
+class MainActivity : AppCompatActivity(), MainService.Listener {
     @Inject
     lateinit var sharedPreference: MySharedPreference
     private lateinit var views: ActivityMainBinding
@@ -30,7 +21,8 @@ class MainActivity : AppCompatActivity(), MainService.Listener{
     @Inject
     lateinit var viewModel: MainViewModel
 
-    @Inject lateinit var mainServiceRepository: MainServiceRepository
+    @Inject
+    lateinit var mainServiceRepository: MainServiceRepository
 
     private val orientationList = listOf(
         "PORTRAIT", "LANDSCAPE_RTL", "LANDSCAPE_LTR"
