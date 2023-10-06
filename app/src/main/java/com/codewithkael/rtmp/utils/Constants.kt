@@ -1,11 +1,20 @@
 package com.codewithkael.rtmp.utils
 
+import android.util.Range
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
+fun Float.fromPercent(range:Range<Int>):Int {
+    if (this>=1) return range.upper-1
+    if (this<=0) return range.lower+1
+    val remainingNumber = (this*100).toInt()
+    val difference = range.upper-1 - range.lower+1
+    val calculated = remainingNumber*difference / 100
+    return calculated + range.lower+1
+}
 
 object Constants {
     fun getSocketUrl(token: String) :String{

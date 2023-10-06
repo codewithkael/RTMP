@@ -51,7 +51,7 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
 
     private Camera mCamera;
     private ByteBuffer mGLPreviewBuffer;
-    private int mCamId = -1;
+    private int mCamId = 0;
     private int mPreviewRotation = 90;
     private int mPreviewOrientation = Configuration.ORIENTATION_PORTRAIT;
 

@@ -10,6 +10,7 @@ import android.graphics.PixelFormat
 import android.os.Build
 import android.util.Log
 import android.view.Gravity
+import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.WindowManager
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
@@ -22,7 +23,9 @@ import com.codewithkael.rtmp.remote.socket.SocketState
 import com.codewithkael.rtmp.ui.main.MainActivity
 import com.codewithkael.rtmp.utils.CameraInfoModel
 import com.codewithkael.rtmp.utils.Constants
-import com.codewithkael.rtmp.utils.RtmpClient2
+import com.codewithkael.rtmp.utils.ExposureMode
+import com.codewithkael.rtmp.utils.RtmpClient3
+import com.haishinkit.view.HkSurfaceView
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -43,7 +46,7 @@ class MainService : LifecycleService() {
         var listener : Listener?=null
     }
 
-    private var mySrsView: SrsCameraView? = null
+    private var surface: HkSurfaceView? = null
 
 
     @Inject
@@ -59,17 +62,16 @@ class MainService : LifecycleService() {
 
     private lateinit var notificationManager: NotificationManager
 
-    private var rtmpClient: RtmpClient2? = null
+    private var rtmpClient: RtmpClient3? = null
     private var key: String? = ""
 
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate() {
         super.onCreate()
         notificationManager = getSystemService(
             NotificationManager::class.java
         )
-        mySrsView = SrsCameraView(this)
+        surface = HkSurfaceView(this)
         val params = WindowManager.LayoutParams(
             1,
             1,
@@ -79,8 +81,8 @@ class MainService : LifecycleService() {
         )
         params.gravity = Gravity.TOP or Gravity.START
         val windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        windowManager.addView(mySrsView, params)
-        mySrsView?.keepScreenOn = true
+        windowManager.addView(surface, params)
+        surface?.keepScreenOn = true
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -134,8 +136,70 @@ class MainService : LifecycleService() {
             isServiceRunning = true
             startServiceWithNotification()
             key = incomingIntent.getStringExtra("key")
-            mySrsView?.let { srsCameraView ->
-                rtmpClient = RtmpClient2(srsCameraView)
+            surface?.let { srf ->
+                rtmpClient = RtmpClient3(this@MainService,srf)
+                val baseModel = CameraInfoModel()
+//                CoroutineScope(Dispatchers.Main).launch {
+//                    val totalDelay = 10000L
+//
+//                    rtmpClient?.start(baseModel.copy(orientation = 90),key){}
+//                    delay(totalDelay)
+//
+//                    rtmpClient?.start(baseModel.copy(shutterSpeed = ExposureMode.EXPOSURE_1_2000,
+//                        orientation = 180),key){}
+//                    delay(totalDelay)
+//
+//                    rtmpClient?.start(baseModel.copy(shutterSpeed = ExposureMode.EXPOSURE_1),key){}
+//                    delay(totalDelay)
+//
+//                    rtmpClient?.start(baseModel.copy(shutterSpeed = ExposureMode.EXPOSURE_1_4000),key){}
+//                    delay(totalDelay)
+//
+//                    rtmpClient?.start(baseModel.copy(shutterSpeed = ExposureMode.EXPOSURE_15),key){}
+//                    delay(totalDelay)
+//
+//                    rtmpClient?.start(baseModel.copy(shutterSpeed = ExposureMode.EXPOSURE_1_4000),key){}
+//                    delay(totalDelay)
+//
+//                    rtmpClient?.start(baseModel.copy(shutterSpeed = ExposureMode.EXPOSURE_30),key){}
+//                    delay(totalDelay)
+//
+//
+//                    rtmpClient?.start(baseModel.copy(flashLight = false,
+//                        focusPercent = 0.1f),key){}
+//                    delay(totalDelay)
+//
+//                    rtmpClient?.start(baseModel.copy(flashLight = false,
+//                        focusPercent = 0.9f),key){}
+//                    delay(totalDelay)
+//
+//                    rtmpClient?.start(baseModel.copy(flashLight = false,
+//                        red = 0.9f, green = 0.9f, blue = 0.91f),key){}
+//                    delay(totalDelay)
+//
+//
+//
+//                    rtmpClient?.start(baseModel.copy(flashLight = false,
+//                        exposureCompensation = 20),key){}
+//                    delay(totalDelay)
+//
+//                    rtmpClient?.start(baseModel.copy(exposureCompensation = -20,flashLight = false),key){}
+//                    delay(totalDelay)
+//
+//                    rtmpClient?.start(baseModel.copy(exposureCompensation = -20,flashLight = false),key){}
+//                    delay(totalDelay)
+//
+//                    rtmpClient?.start(baseModel.copy(exposureCompensation = 0, zoomLevel = 8,flashLight = false),key){}
+//                    delay(totalDelay)
+//
+//                    rtmpClient?.start(baseModel.copy(exposureCompensation = 0, zoomLevel = 4,flashLight = false),key){}
+//                    delay(totalDelay)
+//
+//                    rtmpClient?.start(baseModel.copy(exposureCompensation = 0, zoomLevel = 1),key){}
+//                    delay(totalDelay)
+//
+//                }
+
                 socketClient.initialize(object : SocketClient.Listener {
                     override fun onConnectionStateChanged(state: SocketState) {
                         if (state == SocketState.Connected) {

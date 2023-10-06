@@ -26,6 +26,7 @@ class RtmpClient2 constructor(
     private val mPublisher: SrsPublisher
     private var isCameraOpen = false
     private var isPublishing = false
+    private var currentCameraInfo: CameraInfoModel? = null
 
     private fun getSrsPublisher(srsCameraView: SrsCameraView): SrsPublisher {
         return SrsPublisher(srsCameraView)
@@ -40,6 +41,8 @@ class RtmpClient2 constructor(
         info: CameraInfoModel, key: String?,
         isCameraOpenResult: (Boolean) -> Unit
     ) {
+        if (currentCameraInfo == null) currentCameraInfo = info
+
         Log.d(TAG, "kael start called : $info")
         val url = "rtmp://141.11.184.69/live/$key"
         handleStartOrUpdate(info, url)
@@ -58,11 +61,22 @@ class RtmpClient2 constructor(
 
     private fun handleStartOrUpdate(info: CameraInfoModel, url: String) {
         startPublishing(info, url)
-        if (!isPublishing) {
-            startPublishing(info, url)
-        } else {
-            updatePublishing(info)
-        }
+//        if (currentCameraInfo?.fps != info.fps || currentCameraInfo?.bitrate != info.bitrate
+//            || currentCameraInfo?.width != info.width || currentCameraInfo?.height != info.height
+//            || currentCameraInfo?.orientation != info.orientation) {
+//
+//            startPublishing(info, url)
+//
+//        } else {
+//            if (!isPublishing) {
+//                startPublishing(info, url)
+//            } else {
+//                updatePublishing(info)
+//            }
+//        }
+//
+//        currentCameraInfo = info
+
     }
 
     private fun updatePublishing(info: CameraInfoModel) {
@@ -73,8 +87,8 @@ class RtmpClient2 constructor(
                 zoom = info.zoomLevel
             }
             mPublisher.camera.parameters = params
-//            mPublisher.setPreviewResolution(info.width, info.height)
-//            mPublisher.setOutputResolution(info.height, info.width)
+            mPublisher.setPreviewResolution(info.width, info.height)
+            mPublisher.setOutputResolution(info.height, info.width)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -86,11 +100,17 @@ class RtmpClient2 constructor(
             mPublisher.setEncodeHandler(SrsEncodeHandler(this@RtmpClient2))
             mPublisher.setRtmpHandler(RtmpHandler(this@RtmpClient2))
             mPublisher.setRecordHandler(SrsRecordHandler(this@RtmpClient2))
-            mPublisher.setPreviewResolution(info.width, info.height)
-            mPublisher.setOutputResolution(info.height, info.width) // 这里要和preview反过来
             mPublisher.setVideoHDMode()
-//                mPublisher.switchCameraFace(0)
+
+            mPublisher.setPreviewResolution(info.width, info.height)
+            mPublisher.setOutputResolution(info.height, info.width)
             mPublisher.startCamera()
+            val params = mPublisher.camera.parameters
+            params.apply {
+                zoom = info.zoomLevel
+                exposureCompensation
+            }
+            mPublisher.camera.parameters = params
             mPublisher.startPublish(url)
         } catch (e: Exception) {
             e.printStackTrace()

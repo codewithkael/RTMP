@@ -1,5 +1,7 @@
 package com.codewithkael.rtmp
 
+import android.util.Range
+import com.codewithkael.rtmp.utils.fromPercent
 import org.junit.Test
 
 import org.junit.Assert.*
@@ -14,4 +16,5 @@ class ExampleUnitTest {
     fun addition_isCorrect() {
         assertEquals(4, 2 + 2)
     }
+
 }

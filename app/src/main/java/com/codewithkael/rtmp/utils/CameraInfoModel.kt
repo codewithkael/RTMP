@@ -2,34 +2,64 @@ package com.codewithkael.rtmp.utils
 
 data class CameraInfoModel(
 
-    //switch camera, is front or back
-    val frontCamera:Boolean = false,
-
     //only if front camera is off
     val flashLight:Boolean = false,
 
-    //VIDEO_ORIENTATION_PORTRAIT = 0
-    //VIDEO_ORIENTATION_LANDSCAPE_RIGHT = 1
-    //VIDEO_ORIENTATION_LANDSCAPE_LEFT = 3
-    val orientation:Int = 0,
+    //0, 90, 180, 270
+    val orientation:Int = 180,
 
     //1 to 8
     val zoomLevel:Int=1,
 
-    //-20 to 20
-    val iso:Int=0,
+    //0f to 1f
+    val iso:Float=0.5f,
 
+    //shutter speed mode
+    val shutterSpeed:ExposureMode=ExposureMode.AUTO,
+
+    //exposure
+    //-20 to 20
+    val exposureCompensation:Int =0,
+
+    //camera quality
     val width:Int=720,
     val height:Int=1080,
     val fps:Int=30,
     val bitrate:Int=2500000,
 
-    //normalizedX – center X of the region in current normalized coordinate system. (ranging from 0 to 1).
-    // normalizedY – center Y of the region in current normalized coordinate system. (ranging from 0 to 1).
-    // size – size of the MeteringPoint width and height (ranging from 0 to 1). It is the percentage of the
-    // sensor width/height (or crop region width/height if crop region is set).
-    val normalizedX:Float = 0f,
-    val normalizedY:Float = 0f,
-    val size:Float = 0f,
+    //focus
+    //0 to 1f
+    val focusPercent:Float=0.5f,
+
+    //white balance
+    //0f to 1f
+    val red:Float = 0.5f,
+    //0f to 1f
+    val blue:Float = 0.5f,
+    //0f to 1f
+    val green:Float = 0.5f
+
 
     )
+
+enum class ExposureMode {
+    AUTO,
+    EXPOSURE_1_4000,
+    EXPOSURE_1_2000,
+    EXPOSURE_1_1000,
+    EXPOSURE_1_500,
+    EXPOSURE_1_250,
+    EXPOSURE_1_125,
+    EXPOSURE_1_60,
+    EXPOSURE_1_30,
+    EXPOSURE_1_15,
+    EXPOSURE_1_8,
+    EXPOSURE_1_4,
+    EXPOSURE_1_2,
+    EXPOSURE_1,
+    EXPOSURE_2,
+    EXPOSURE_4,
+    EXPOSURE_8,
+    EXPOSURE_15,
+    EXPOSURE_30
+}

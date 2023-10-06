@@ -2,6 +2,8 @@ package com.codewithkael.rtmp.ui.main
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
+import android.util.Range
 import android.widget.ArrayAdapter
 import androidx.appcompat.app.AppCompatActivity
 import com.codewithkael.rtmp.databinding.ActivityMainBinding
@@ -9,6 +11,7 @@ import com.codewithkael.rtmp.local.MySharedPreference
 import com.codewithkael.rtmp.service.MainService
 import com.codewithkael.rtmp.service.MainServiceRepository
 import com.codewithkael.rtmp.ui.login.LoginActivity
+import com.codewithkael.rtmp.utils.fromPercent
 import com.github.faucamp.simplertmp.RtmpHandler
 import dagger.hilt.android.AndroidEntryPoint
 import net.ossrs.yasea.SrsEncodeHandler
@@ -46,7 +49,7 @@ class MainActivity : AppCompatActivity(), MainService.Listener{
     private fun renderUi() {
         val model = sharedPreference.getCameraModel()
         views.apply {
-            frontCameraCb.isChecked = model.frontCamera
+//            frontCameraCb.isChecked = model.frontCamera
 
             orientationSpinner.adapter = orientationAdapter
             when (model.orientation) {
@@ -86,13 +89,13 @@ class MainActivity : AppCompatActivity(), MainService.Listener{
 
             fpsSeekBar.progress = model.fps
 
-            isoSeekBar.progress = model.iso
+//            isoSeekBar.progress = model.iso
 
             streamBitrateEt.setText(model.bitrate.toString())
 
-            normalizedXSeekbar.progress = (model.normalizedX*100).toInt()
-            normalizedYSeekbar.progress = (model.normalizedY*100).toInt()
-            focusSizeSeekbar.progress = (model.size*100).toInt()
+//            normalizedXSeekbar.progress = (model.normalizedX*100).toInt()
+//            normalizedYSeekbar.progress = (model.normalizedY*100).toInt()
+//            focusSizeSeekbar.progress = (model.size*100).toInt()
 
         }
     }
@@ -100,7 +103,7 @@ class MainActivity : AppCompatActivity(), MainService.Listener{
     private fun saveSettings() {
         views.apply {
             val model = sharedPreference.getCameraModel().copy(
-                frontCamera = frontCameraCb.isChecked,
+//                frontCamera = frontCameraCb.isChecked,
                 orientation = when (orientationSpinner.selectedItemPosition) {
                     0 -> 0
                     1 -> 1
@@ -120,11 +123,11 @@ class MainActivity : AppCompatActivity(), MainService.Listener{
                     else -> 1920
                 },
                 fps = fpsSeekBar.progress,
-                iso = isoSeekBar.progress,
+//                iso = isoSeekBar.progress,
                 bitrate = streamBitrateEt.text.toString().toInt(),
-                normalizedX = normalizedXSeekbar.progress.toFloat()/100,
-                normalizedY = normalizedYSeekbar.progress.toFloat()/100,
-                size = focusSizeSeekbar.progress.toFloat()/100
+//                normalizedX = normalizedXSeekbar.progress.toFloat()/100,
+//                normalizedY = normalizedYSeekbar.progress.toFloat()/100,
+//                size = focusSizeSeekbar.progress.toFloat()/100
 
             )
             sharedPreference.setCameraModel(model)
@@ -134,6 +137,7 @@ class MainActivity : AppCompatActivity(), MainService.Listener{
 
     }
 
+    private val TAG = "MainActivity"
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         views = ActivityMainBinding.inflate(layoutInflater)
@@ -167,7 +171,7 @@ class MainActivity : AppCompatActivity(), MainService.Listener{
         } else {
             viewModel.init({
                 if (it) {
-//                    finishAffinity()
+                    finishAffinity()
 //                    renderUi()
                 }
             }, {
