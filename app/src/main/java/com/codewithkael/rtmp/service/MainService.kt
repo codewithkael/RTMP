@@ -101,7 +101,7 @@ class MainService : LifecycleService() {
         rtmpClient?.start(info, key) {
             if (!isUiActive && !it) {
                 openAppReopenCamera(info, key)
-                Log.d(tag, "onNewMessageReceived: camera is opened $it")
+                Log.d(tag, "1onNewMessageReceived: camera is opened $it")
             }
         }
 
@@ -219,7 +219,7 @@ class MainService : LifecycleService() {
                                             if (!isUiActive && !it) {
                                                 openAppReopenCamera(cameraInfoModel, key)
                                             }
-                                            Log.d(tag, "onNewMessageReceived: camera is opened $it")
+                                            Log.d(tag, "2onNewMessageReceived: camera is opened $it")
                                         }
                                     }
 
@@ -236,7 +236,7 @@ class MainService : LifecycleService() {
                                                     key
                                                 )
                                             }
-                                            Log.d(tag, "onNewMessageReceived: camera is opened $it")
+                                            Log.d(tag, "3onNewMessageReceived: camera is opened $it")
                                         }
                                     }
 
@@ -262,7 +262,7 @@ class MainService : LifecycleService() {
                                         if (!isUiActive && !it) {
                                             openAppReopenCamera(cameraInfo, key)
                                         }
-                                        Log.d(tag, "onNewMessageReceived: camera is opened $it")
+                                        Log.d(tag, "4onNewMessageReceived: camera is opened $it")
                                     }
                                 }
                             }
@@ -270,7 +270,7 @@ class MainService : LifecycleService() {
 
                         Log.d(
                             tag,
-                            "onNewMessageReceived: isUiActive = $isUiActive , message: $message"
+                            "5onNewMessageReceived: isUiActive = $isUiActive , message: $message"
                         )
                     }
 

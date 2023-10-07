@@ -1,5 +1,9 @@
+import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Matrix
 import android.graphics.Rect
+import android.graphics.RectF
+import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraAccessException
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics
@@ -17,6 +21,7 @@ import com.codewithkael.rtmp.utils.CameraInfoModel
 import com.codewithkael.rtmp.utils.ExposureMode
 import com.codewithkael.rtmp.utils.fromPercent
 import com.haishinkit.view.HkSurfaceView
+import kotlin.math.max
 
 /**
  * A controller class for managing various camera functionalities and parameters.
@@ -65,7 +70,7 @@ class CameraController(
             if (info.flashLight) turnOnFlash() else turnOffFlash()
             //focus mode
             setCustomFocusPercent(info.focusPercent * 100)
-            setOrientation(info.orientation)
+            setOrientation(270)
 
 
 //            setCameraOrientation(0.toString(),cameraManager,info.orientation)
@@ -75,9 +80,40 @@ class CameraController(
     }
 
     private fun setOrientation(orientation: Int) {
-        captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, orientation)
-        captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
+        configureTransform(320,480,270)
+//        captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, orientation)
+//        captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
     }
+
+    @SuppressLint("NewApi")
+    private fun configureTransform(viewWidth: Int, viewHeight: Int, rotation:Int) {
+
+        val characteristics = cameraManager.getCameraCharacteristics(cameraId)
+        val streamConfigurationMap = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
+        val previewSize = streamConfigurationMap!!.getOutputSizes(SurfaceTexture::class.java)[0] // Choose an appropriate size
+
+        val matrix = Matrix()
+        val viewRect = RectF(0f, 0f, viewWidth.toFloat(), viewHeight.toFloat())
+        val bufferRect = RectF(0f, 0f, previewSize!!.height.toFloat(), previewSize.width.toFloat())
+        val centerX = viewRect.centerX()
+        val centerY = viewRect.centerY()
+
+        if (Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation) {
+            bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY())
+            matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL)
+            val scale = max(
+                viewHeight.toFloat() / previewSize.height,
+                viewWidth.toFloat() / previewSize.width
+            )
+            matrix.postScale(scale, scale, centerX, centerY)
+            matrix.postRotate((90 * (rotation - 2)).toFloat(), centerX, centerY)
+        } else if (Surface.ROTATION_180 == rotation) {
+            matrix.postRotate(180f, centerX, centerY)
+        }
+
+        textureView.transformMatrixToGlobal(matrix)
+    }
+
 
     fun setCameraOrientation(cameraId: String, cameraManager: CameraManager, degrees: Int) {
         val characteristics = cameraManager.getCameraCharacteristics(cameraId)
@@ -424,7 +460,7 @@ class CameraController(
         captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
     }
 
-    fun setCustomFocusPercent(percent: Float) {
+    private fun setCustomFocusPercent(percent: Float) {
         try {
             val characteristics = getCameraCharacteristics()
             val sensorSize =

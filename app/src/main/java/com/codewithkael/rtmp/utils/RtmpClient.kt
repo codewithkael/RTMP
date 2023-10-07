@@ -1,7 +1,6 @@
 package com.codewithkael.rtmp.utils
 
 import CameraController
-import android.annotation.SuppressLint
 import android.content.Context
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics
@@ -25,18 +24,18 @@ import javax.inject.Singleton
 
 @Singleton
 class RtmpClient constructor(
-    context: Context,
+    private val context: Context,
     private val surfaceView: HkSurfaceView
 ) : Camera2Source.Listener, IEventListener {
 
     private val TAG = "RtmpClient3"
 
-    private val connection: RtmpConnection = RtmpConnection()
-    private val stream: RtmpStream = RtmpStream(connection)
-    private var videoSource: Camera2Source = Camera2Source(context).apply {
+    private  var connection: RtmpConnection= RtmpConnection()
+    private  var stream: RtmpStream= RtmpStream(connection)
+    private  var videoSource: Camera2Source= Camera2Source(context).apply {
         open(CameraCharacteristics.LENS_FACING_BACK)
     }
-
+    private lateinit var url:String
 
     private var session: CameraCaptureSession?=null
     private  var cameraManager: CameraManager?=null
@@ -62,10 +61,10 @@ class RtmpClient constructor(
     private var currentCameraInfo: CameraInfoModel? = null
 
     init {
-        videoSource.listener = this@RtmpClient
         stream.attachVideo(videoSource)
-        surfaceView.attachStream(stream)
         connection.addEventListener(Event.RTMP_STATUS, this@RtmpClient)
+        surfaceView.attachStream(stream)
+        videoSource.listener = this@RtmpClient
     }
 
     fun start(
@@ -74,7 +73,7 @@ class RtmpClient constructor(
     ) {
         Log.d(TAG, "kael start called publishing:$isPublishing camera:$isCameraOpen : $info ")
         if (currentCameraInfo == null) currentCameraInfo = info
-        val url = "rtmp://141.11.184.69/live/$key"
+        url = "rtmp://141.11.184.69/live/$key"
 //        val url = "rtmp://192.168.126.131/live/$key"
         handleStartOrUpdate(info, url)
         CoroutineScope(Dispatchers.IO).launch {
@@ -89,22 +88,27 @@ class RtmpClient constructor(
         if (currentCameraInfo?.fps != info.fps || currentCameraInfo?.bitrate != info.bitrate
             || currentCameraInfo?.width != info.width || currentCameraInfo?.height != info.height
             || currentCameraInfo?.orientation != info.orientation) {
-
-            stopPublishing()
+            Log.d(TAG, "handleStartOrUpdate: kael start called 1")
             CoroutineScope(Dispatchers.IO).launch {
+                stopPublishing()
                 delay(1000)
                 startPublishing(info, url)
             }
 
         } else {
+            Log.d(TAG, "handleStartOrUpdate: kael start called 2")
+
             if (!isPublishing){
-                stopPublishing()
+                Log.d(TAG, "handleStartOrUpdate: kael start called 3")
+
                 CoroutineScope(Dispatchers.IO).launch {
-                   delay(1000)
+                    stopPublishing()
+                    delay(1000)
                     startPublishing(info,url)
-                    isPublishing = true
                 }
             }else{
+                Log.d(TAG, "handleStartOrUpdate: kael start called 4")
+
                 updatePublishing(info, info.exposureCompensation != currentCameraInfo?.exposureCompensation)
             }
         }
@@ -133,10 +137,6 @@ class RtmpClient constructor(
             stream.videoSetting.bitRate = info.bitrate // The bitRate of video output.
             stream.videoSetting.frameRate = if (info.fps<15) 15 else info.fps
             stream.videoSetting.IFrameInterval = 2
-            if (requestBuilder!=null){
-                requestBuilder!!.set(CaptureRequest.JPEG_ORIENTATION,info.orientation)
-            }
-            surfaceView.attachStream(stream)
             connection.connect(url)
             stream.publish(url.split("live/")[1])
             if (requestBuilder == null || session == null || cameraManager == null){
@@ -155,7 +155,7 @@ class RtmpClient constructor(
                         session = cameraSessionField.get(videoSource) as CameraCaptureSession
                         Log.d(TAG, "onCreate: $session")
                         updatePublishing(info,info.exposureCompensation != currentCameraInfo?.exposureCompensation)
-                        isPublishing = true
+
                     }
 
                 } catch (e: NoSuchFieldException) {
@@ -168,6 +168,7 @@ class RtmpClient constructor(
             }
 
         } catch (e: Exception) {
+            Log.d(TAG, "startPublishing: error  ${e.message}")
             e.printStackTrace()
         }
 
@@ -184,9 +185,16 @@ class RtmpClient constructor(
 //    }
 
 
-    private fun stopPublishing() {
+    private suspend fun stopPublishing() {
+
         try {
-            isPublishing = false
+//            isPublishing = false
+//            connection = RtmpConnection()
+//            stream = RtmpStream(connection)
+//            stream.attachVideo(videoSource)
+//            connection.addEventListener(Event.RTMP_STATUS, this@RtmpClient)
+//            surfaceView.attachStream(stream)
+            stream.close()
             connection.close()
         } catch (e: Exception) {
             e.printStackTrace()
@@ -250,7 +258,11 @@ class RtmpClient constructor(
     }
 
     override fun handleEvent(event: Event) {
-        Log.d(TAG, "handleEvent: $event")
+            isPublishing = event.data.toString().contains("code=NetConnection.Connect.Success")
+                    && event.type == "rtmpStatus"
+            Log.d(TAG, "handleStartOrUpdate: kael publisher setter 4 $isPublishing")
+            Log.d(TAG, "handleStartOrUpdate: kael  ${event.data}")
+
+        }
     }
-}
 
