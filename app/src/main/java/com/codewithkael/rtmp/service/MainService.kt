@@ -10,6 +10,7 @@ import android.graphics.PixelFormat
 import android.os.Build
 import android.util.Log
 import android.view.Gravity
+import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.WindowManager
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
@@ -69,8 +70,8 @@ class MainService : LifecycleService() {
         )
         surface = HkSurfaceView(this)
         val params = WindowManager.LayoutParams(
-            1,
-            1,
+            MATCH_PARENT,
+            500,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, // This type is suitable for overlays
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT

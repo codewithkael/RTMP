@@ -7,6 +7,7 @@ import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
+import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.CaptureRequest.Builder
 import android.util.Log
 import com.haishinkit.event.Event
@@ -22,10 +23,9 @@ import kotlinx.coroutines.launch
 import java.lang.reflect.Field
 import javax.inject.Singleton
 
-@SuppressLint("SuspiciousIndentation")
 @Singleton
 class RtmpClient constructor(
-    private val context: Context,
+    context: Context,
     private val surfaceView: HkSurfaceView
 ) : Camera2Source.Listener, IEventListener {
 
@@ -38,9 +38,9 @@ class RtmpClient constructor(
     }
 
 
-    private lateinit var session: CameraCaptureSession
-    private lateinit var cameraManager: CameraManager
-    private lateinit var requestBuilder: Builder
+    private var session: CameraCaptureSession?=null
+    private  var cameraManager: CameraManager?=null
+    private  var requestBuilder: Builder?=null
 
     private var cameraController: CameraController? = null
     private fun getCameraController():CameraController? {
@@ -48,7 +48,7 @@ class RtmpClient constructor(
             cameraController
         } else {
             try {
-                requestCameraControlBuild(requestBuilder,true)
+                requestBuilder?.let { requestCameraControlBuild(it,true) }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -65,7 +65,6 @@ class RtmpClient constructor(
         videoSource.listener = this@RtmpClient
         stream.attachVideo(videoSource)
         surfaceView.attachStream(stream)
-
         connection.addEventListener(Event.RTMP_STATUS, this@RtmpClient)
     }
 
@@ -78,7 +77,7 @@ class RtmpClient constructor(
         val url = "rtmp://141.11.184.69/live/$key"
 //        val url = "rtmp://192.168.126.131/live/$key"
         handleStartOrUpdate(info, url)
-        CoroutineScope(Dispatchers.Main).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             delay(2000)
             isCameraOpenResult(isCameraOpen)
         }
@@ -92,7 +91,7 @@ class RtmpClient constructor(
             || currentCameraInfo?.orientation != info.orientation) {
 
             stopPublishing()
-            CoroutineScope(Dispatchers.Main).launch {
+            CoroutineScope(Dispatchers.IO).launch {
                 delay(1000)
                 startPublishing(info, url)
             }
@@ -100,13 +99,13 @@ class RtmpClient constructor(
         } else {
             if (!isPublishing){
                 stopPublishing()
-                CoroutineScope(Dispatchers.Main).launch {
+                CoroutineScope(Dispatchers.IO).launch {
                    delay(1000)
                     startPublishing(info,url)
                     isPublishing = true
                 }
             }else{
-                updatePublishing(info)
+                updatePublishing(info, info.exposureCompensation != currentCameraInfo?.exposureCompensation)
             }
         }
 
@@ -114,10 +113,12 @@ class RtmpClient constructor(
 
     }
 
-    private fun updatePublishing(info: CameraInfoModel) {
+    private fun updatePublishing(info: CameraInfoModel,isExposureUpdated:Boolean) {
         try {
-//            rotateCameraPreview(session,surfaceView,info.orientation)
-            getCameraController()?.updateCameraInfo(info)
+//            rotateCameraPreview(info.orientation)
+            CoroutineScope(Dispatchers.IO).launch {
+                getCameraController()?.updateCameraInfo(info,isExposureUpdated)
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -127,55 +128,61 @@ class RtmpClient constructor(
 
     private fun startPublishing(info: CameraInfoModel, url: String) {
         try {
-            stream.videoSetting.width = info.width // The width resoulution of video output.
-            stream.videoSetting.height = info.height // The height resoulution of video output.
+            stream.videoSetting.width = info.width // The width  of video output.
+            stream.videoSetting.height = info.height // The height  of video output.
             stream.videoSetting.bitRate = info.bitrate // The bitRate of video output.
             stream.videoSetting.frameRate = if (info.fps<15) 15 else info.fps
             stream.videoSetting.IFrameInterval = 2
-
+            if (requestBuilder!=null){
+                requestBuilder!!.set(CaptureRequest.JPEG_ORIENTATION,info.orientation)
+            }
             surfaceView.attachStream(stream)
             connection.connect(url)
             stream.publish(url.split("live/")[1])
-            try {
-                CoroutineScope(Dispatchers.Main).launch {
-                    delay(2000)
-                    val cameraManagerField: Field =
-                        Camera2Source::class.java.getDeclaredField("manager")
-                    cameraManagerField.isAccessible = true
-                    cameraManager = cameraManagerField.get(videoSource) as CameraManager
+            if (requestBuilder == null || session == null || cameraManager == null){
+                try {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        delay(2000)
+                        val cameraManagerField: Field =
+                            Camera2Source::class.java.getDeclaredField("manager")
+                        cameraManagerField.isAccessible = true
+                        cameraManager = cameraManagerField.get(videoSource) as CameraManager
 
-                    val cameraSessionField: Field =
-                        Camera2Source::class.java.getDeclaredField("session")
-                    cameraSessionField.isAccessible = true
-                    delay(1000)
-                    session = cameraSessionField.get(videoSource) as CameraCaptureSession
-                    Log.d(TAG, "onCreate: $session")
-                    updatePublishing(info)
-                    isPublishing = true
+                        val cameraSessionField: Field =
+                            Camera2Source::class.java.getDeclaredField("session")
+                        cameraSessionField.isAccessible = true
+                        delay(1000)
+                        session = cameraSessionField.get(videoSource) as CameraCaptureSession
+                        Log.d(TAG, "onCreate: $session")
+                        updatePublishing(info,info.exposureCompensation != currentCameraInfo?.exposureCompensation)
+                        isPublishing = true
+                    }
+
+                } catch (e: NoSuchFieldException) {
+                    Log.d(TAG, "onCreate: ${e.message}")
+                    e.printStackTrace()
+                } catch (e: IllegalAccessException) {
+                    Log.d(TAG, "onCreate: ${e.message}")
+                    e.printStackTrace()
                 }
-
-            } catch (e: NoSuchFieldException) {
-                Log.d(TAG, "onCreate: ${e.message}")
-                e.printStackTrace()
-            } catch (e: IllegalAccessException) {
-                Log.d(TAG, "onCreate: ${e.message}")
-                e.printStackTrace()
             }
+
         } catch (e: Exception) {
             e.printStackTrace()
         }
 
     }
 
-    fun rotateCameraPreview(session: CameraCaptureSession, surfaceView: HkSurfaceView, degrees: Int) {
-        try {
-//            requestBuilder.addTarget(surfaceView.holder.surface)
-//            requestBuilder.set(CaptureRequest.JPEG_ORIENTATION, degrees)
+//    private fun rotateCameraPreview(degrees: Int) {
+//        Log.d(TAG, "rotateCameraPreview: called")
+//        try {
+//            requestBuilder.set(CaptureRequest.JPEG_ORIENTATION, 270)
 //            session.setRepeatingRequest(requestBuilder.build(), null, null)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
+//        } catch (e: Exception) {
+//            e.printStackTrace()
+//        }
+//    }
+
 
     private fun stopPublishing() {
         try {
@@ -195,12 +202,17 @@ class RtmpClient constructor(
 
         try {
             if (!refresh){
-                cameraController = CameraController(0.toString(),cameraManager,session,builder,surfaceView)
+                cameraController = cameraManager?.let {
+                    session?.let { it1 ->
+                        CameraController(0.toString(),
+                            it, it1,builder,surfaceView)
+                    }
+                }
                 isCameraOpen = true
             }else{
-                CoroutineScope(Dispatchers.Main).launch {
+                CoroutineScope(Dispatchers.IO).launch {
                         try {
-                            CoroutineScope(Dispatchers.Main).launch {
+                            CoroutineScope(Dispatchers.IO).launch {
                                 delay(2000)
                                 val cameraManagerField: Field =
                                     Camera2Source::class.java.getDeclaredField("manager")
@@ -212,9 +224,12 @@ class RtmpClient constructor(
                                 cameraSessionField.isAccessible = true
                                 session = cameraSessionField.get(videoSource) as CameraCaptureSession
                                 Log.d(TAG, "onCreate: $session")
-                                cameraController = CameraController(0.toString(),cameraManager,session,requestBuilder,
-                                    surfaceView)
-                                isCameraOpen = true
+                                if (cameraManager!=null && session !=null && requestBuilder!=null){
+                                    cameraController = CameraController(0.toString(),cameraManager!!
+                                        ,session!!,requestBuilder!!,
+                                        surfaceView)
+                                    isCameraOpen = true
+                                }
                             }
                         } catch (e: NoSuchFieldException) {
                             Log.d(TAG, "onCreate: ${e.message}")

@@ -1,16 +1,17 @@
 import android.content.Context
 import android.graphics.Rect
+import android.hardware.camera2.CameraAccessException
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
+import android.hardware.camera2.CameraMetadata
 import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.params.MeteringRectangle
 import android.hardware.camera2.params.RggbChannelVector
+import android.util.Log
 import android.util.Range
 import android.util.Size
 import android.view.Surface
-import android.view.SurfaceView
-import android.view.ViewGroup
 import android.view.WindowManager
 import com.codewithkael.rtmp.utils.CameraInfoModel
 import com.codewithkael.rtmp.utils.ExposureMode
@@ -40,36 +41,40 @@ class CameraController(
      * @return CameraCharacteristics for the specified camera ID.
      */
     // Function to get camera characteristics
-    fun getCameraCharacteristics(): CameraCharacteristics {
+    private fun getCameraCharacteristics(): CameraCharacteristics {
         return cameraManager.getCameraCharacteristics(cameraId)
     }
 
-    fun updateCameraInfo(info:CameraInfoModel){
-
+    fun updateCameraInfo(info: CameraInfoModel, exposureUpdated: Boolean) {
+        Log.d(TAG, "updateCameraInfo: $exposureUpdated")
         try {
-//            setOrientation(info.orientation)
-            setZoom(info.zoomLevel.toFloat())
-            getIsoRange()?.let { range->
-                val value = info.iso.fromPercent(range)
-                setIso(value)
-            }
-            setShutterSpeedMode(info.shutterSpeed)
-            setCustomWhiteBalance(info.red,info.green,info.blue)
-            setExposureCompensation(info.exposureCompensation)
-            if (info.flashLight) turnOnFlash() else turnOffFlash()
+            if (!exposureUpdated) {
+                setExposureTime(info.shutterSpeed)
+                getIsoRange()?.let { range ->
+                    Log.d(TAG, "updateCameraInfo: isoRange $range")
+                    val value = info.iso.fromPercent(range)
+                    Log.d(TAG, "updateCameraInfo: isoValue $value")
 
+                    setIso(value)
+                }
+            } else {
+                setExposureCompensation(info.exposureCompensation)
+            }
+            setZoom(info.zoomLevel.toFloat())
+            setCustomWhiteBalance(info.red, info.green, info.blue)
+            if (info.flashLight) turnOnFlash() else turnOffFlash()
             //focus mode
-//            val xPercent = info.normalizedX.fromPercent(Range(0,info.width))
-//            val yPercent = info.normalizedX.fromPercent(Range(0,info.height))
-//            setCustomFocus(xPercent,yPercent,xPercent,yPercent)
-            setCustomFocusPercent(info.focusPercent*100)
+            setCustomFocusPercent(info.focusPercent * 100)
+            setOrientation(info.orientation)
+
+
 //            setCameraOrientation(0.toString(),cameraManager,info.orientation)
-        }catch (e:Exception){
+        } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    fun setOrientation(orientation:Int){
+    private fun setOrientation(orientation: Int) {
         captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, orientation)
         captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
     }
@@ -99,7 +104,9 @@ class CameraController(
         textureView.rotation = degrees.toFloat()
 
         // Set the orientation in the capture request
-        captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, getJpegOrientation(characteristics, orientation))
+        captureBuilder.set(
+            CaptureRequest.JPEG_ORIENTATION, getJpegOrientation(characteristics, orientation)
+        )
     }
 
     // Function to choose an optimal size based on desired dimensions
@@ -112,8 +119,8 @@ class CameraController(
 
     // Function to get the device orientation (in degrees)
     private fun getDeviceOrientation(): Int {
-        val displayRotation = (textureView.context.getSystemService(Context.WINDOW_SERVICE) as WindowManager)
-            .defaultDisplay.rotation
+        val displayRotation =
+            (textureView.context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay.rotation
 
         return when (displayRotation) {
             Surface.ROTATION_0 -> 0
@@ -125,7 +132,9 @@ class CameraController(
     }
 
     // Function to get the JPEG orientation based on device orientation
-    private fun getJpegOrientation(characteristics: CameraCharacteristics, deviceOrientation: Int): Int {
+    private fun getJpegOrientation(
+        characteristics: CameraCharacteristics, deviceOrientation: Int
+    ): Int {
         if (deviceOrientation == android.view.OrientationEventListener.ORIENTATION_UNKNOWN) return 0
         val sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION)
 
@@ -133,7 +142,8 @@ class CameraController(
         val roundedOrientation = (deviceOrientation + 45) / 90 * 90
 
         // Reverse device orientation for front-facing cameras
-        val facingFront = characteristics.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT
+        val facingFront =
+            characteristics.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT
         return if (facingFront) {
             (sensorOrientation!! + roundedOrientation) % 360
         } else {  // Back-facing
@@ -142,78 +152,13 @@ class CameraController(
     }
 
 
-    fun updateCameraInfo2(info:CameraInfoModel){
-
-        try {
-            val characteristics = getCameraCharacteristics()
-
-            captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, info.orientation)
-
-            //zoom
-            val maxZoom = characteristics.get(CameraCharacteristics.SCALER_AVAILABLE_MAX_DIGITAL_ZOOM)
-            if (maxZoom != null) {
-                val zoomRect = calculateZoomRect(characteristics, info.zoomLevel.toFloat())
-                captureBuilder.set(CaptureRequest.SCALER_CROP_REGION, zoomRect)
-            }
-
-            //iso
-            getIsoRange()?.let { range->
-                val value = info.iso.fromPercent(range)
-                val isoRange = getIsoRange()
-                if (isoRange != null && value in isoRange) {
-                    captureBuilder.set(CaptureRequest.SENSOR_SENSITIVITY, value)
-                }
-            }
-
-            //white balance
-            val gains = RggbChannelVector(info.red,info.green,info.green,info.blue)
-            captureBuilder.set(CaptureRequest.COLOR_CORRECTION_MODE, CaptureRequest.COLOR_CORRECTION_MODE_TRANSFORM_MATRIX)
-            captureBuilder.set(CaptureRequest.COLOR_CORRECTION_GAINS, gains)
-
-
-            //exposure
-            val aeCompensationRange =
-                getCameraCharacteristics().get(CameraCharacteristics.CONTROL_AE_COMPENSATION_RANGE)
-
-            if (aeCompensationRange != null && info.exposureCompensation in aeCompensationRange) {
-                captureBuilder.set(
-                    CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION,
-                    info.exposureCompensation
-                )
-            }
-
-            if (info.flashLight) {
-                captureBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_TORCH)
-            } else {
-                captureBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_OFF)
-            }
-
-
-//            //focus mode
-//            val xPercent = info.normalizedX.fromPercent(Range(0,info.width))
-//            val yPercent = info.normalizedX.fromPercent(Range(0,info.height))
-//            val rect = Rect(xPercent, yPercent, xPercent + yPercent, yPercent + xPercent)
-//            val meteringRectangle = MeteringRectangle(rect, MeteringRectangle.METERING_WEIGHT_MAX)
-//            val meteringRectangles = arrayOf(meteringRectangle)
-//            captureBuilder.set(CaptureRequest.CONTROL_AF_REGIONS, meteringRectangles)
-//            captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_AUTO)
-
-
-            //shutter speed
-            setShutterSpeedMode(info.shutterSpeed)
-
-        }catch (e:Exception){
-            e.printStackTrace()
-        }
-    }
-
     /**
      * Set the zoom level of the camera.
      *
      * @param zoomLevel The desired zoom level (should be between 1.0 and maxZoom).
      */
     // Function to set zoom level (zoomLevel should be between 1.0 and maxZoom)
-    fun setZoom(zoomLevel: Float) {
+    private fun setZoom(zoomLevel: Float) {
         val characteristics = getCameraCharacteristics()
         val maxZoom = characteristics.get(CameraCharacteristics.SCALER_AVAILABLE_MAX_DIGITAL_ZOOM)
         if (maxZoom != null) {
@@ -249,7 +194,7 @@ class CameraController(
      * @return Range of supported ISO values.
      */
     // Function to get ISO range
-    fun getIsoRange(): Range<Int>? {
+    private fun getIsoRange(): Range<Int>? {
         return getCameraCharacteristics().get(CameraCharacteristics.SENSOR_INFO_SENSITIVITY_RANGE)
     }
 
@@ -259,11 +204,13 @@ class CameraController(
      * @param isoValue The desired ISO value (should be within supported range).
      */
     // Function to set ISO sensitivity (isoValue should be within supported range)
-    fun setIso(isoValue: Int) {
+    private fun setIso(isoValue: Int) {
         val isoRange = getIsoRange()
         if (isoRange != null && isoValue in isoRange) {
+            captureBuilder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_OFF)
             captureBuilder.set(CaptureRequest.SENSOR_SENSITIVITY, isoValue)
             captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
+            Log.d(TAG, "setIso: called")
         }
     }
 
@@ -285,12 +232,98 @@ class CameraController(
      * @param exposureTime The desired exposure time in nanoseconds.
      */
     // Function to set exposure time (exposureTime in nanoseconds)
-    private fun setExposureTime(exposureTime: Long) {
-        val exposureRange = getExposureTimeRange()
-        if (exposureRange != null && exposureTime in exposureRange) {
-            captureBuilder.set(CaptureRequest.SENSOR_EXPOSURE_TIME, exposureTime)
+    private fun setExposureTime(exposureTime: ExposureMode?) {
+        val range = getExposureTimeRange()
+        if (exposureTime == ExposureMode.AUTO) {
+            captureBuilder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO)
             captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
+        } else {
+            val time = when (exposureTime) {
+
+                ExposureMode.EXPOSURE_1_4000 -> {
+
+                    range?.lower // Equivalent to 1/4000 second
+                }
+
+                ExposureMode.EXPOSURE_1_2000 -> {
+                    range?.lower?.times(2) // Equivalent to 1/2000 second
+                }
+
+                ExposureMode.EXPOSURE_1_1000 -> {
+                    range?.lower?.times(4) // Equivalent to 1/1000 second
+                }
+
+                ExposureMode.EXPOSURE_1_500 -> {
+                    range?.lower?.times(8) // Equivalent to 1/500 second
+                }
+
+                ExposureMode.EXPOSURE_1_250 -> {
+                    range?.lower?.times(16)// Equivalent to 1/250 second
+                }
+
+                ExposureMode.EXPOSURE_1_125 -> {
+                    range?.lower?.times(32)// Equivalent to 1/125 second
+                }
+
+                ExposureMode.EXPOSURE_1_60 -> {
+                    range?.lower?.times(64) // Equivalent to 1/60 second
+                }
+
+                ExposureMode.EXPOSURE_1_30 -> {
+                    range?.lower?.times(128) // Equivalent to 1/30 second
+                }
+
+                ExposureMode.EXPOSURE_1_15 -> {
+                    range?.upper?.div(256) // Equivalent to 1/15 second
+                }
+
+                ExposureMode.EXPOSURE_1_8 -> {
+                    range?.lower?.times(256) // Equivalent to 1/8 second
+                }
+
+                ExposureMode.EXPOSURE_1_4 -> {
+                    range?.upper?.div(128) // Equivalent to 1/4 second
+                }
+
+                ExposureMode.EXPOSURE_1_2 -> {
+                    range?.upper?.div(64) // Equivalent to 1/2 second
+                }
+
+                ExposureMode.EXPOSURE_1 -> {
+                    range?.upper?.div(32) // Equivalent to 1 second
+                }
+
+                ExposureMode.EXPOSURE_2 -> {
+                    range?.upper?.div(16) // Equivalent to 2 seconds
+                }
+
+                ExposureMode.EXPOSURE_4 -> {
+                    range?.upper?.div(8) // Equivalent to 4 seconds
+                }
+
+                ExposureMode.EXPOSURE_8 -> {
+                    range?.upper?.div(4) // Equivalent to 8 seconds
+                }
+
+                ExposureMode.EXPOSURE_15 -> {
+                    range?.upper?.div(2) // Equivalent to 15 seconds
+                }
+
+                ExposureMode.EXPOSURE_30 -> {
+                    range?.upper // Equivalent to 30 seconds
+                }
+
+                else -> {
+                    range?.upper?.div(256)
+                }
+            }
+            captureBuilder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_OFF)
+            captureBuilder.set(CaptureRequest.SENSOR_EXPOSURE_TIME, time)
+            captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
+            Log.d(TAG, "setExposureTime: called $time range$range")
+
         }
+
     }
 
 
@@ -312,11 +345,23 @@ class CameraController(
      * @param greenGain The gain for the green channel. 1-254
      * @param blueGain The gain for the blue channel. 1-254
      */
-    fun setCustomWhiteBalance(redGain: Float, greenGain: Float, blueGain: Float) {
-        val gains = RggbChannelVector(redGain, greenGain, greenGain, blueGain)
-        captureBuilder.set(CaptureRequest.COLOR_CORRECTION_MODE, CaptureRequest.COLOR_CORRECTION_MODE_TRANSFORM_MATRIX)
-        captureBuilder.set(CaptureRequest.COLOR_CORRECTION_GAINS, gains)
-        captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
+    private fun setCustomWhiteBalance(redGain: Float, greenGain: Float, blueGain: Float) {
+
+        try {
+            captureBuilder.set(
+                CaptureRequest.COLOR_CORRECTION_MODE, CameraMetadata.CONTROL_AWB_MODE_OFF
+            )
+            captureBuilder.set(
+                CaptureRequest.CONTROL_AWB_MODE, CameraMetadata.CONTROL_AWB_MODE_OFF
+            )
+            val gains = RggbChannelVector(redGain, greenGain, greenGain, blueGain)
+            captureBuilder.set(CaptureRequest.COLOR_CORRECTION_GAINS, gains)
+            captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
+            Log.d(TAG, "setCustomWhiteBalance: called")
+        } catch (e: CameraAccessException) {
+            Log.d(TAG, "setCustomWhiteBalance: ${e.message}")
+            e.printStackTrace()
+        }
     }
 
     /**
@@ -326,17 +371,21 @@ class CameraController(
      * -20 to 20
      */
     // Function to set exposure compensation (exposureCompensationValue should be in EV units)
-    fun setExposureCompensation(exposureCompensationValue: Int) {
+    private fun setExposureCompensation(exposureCompensationValue: Int) {
         val aeCompensationRange =
             getCameraCharacteristics().get(CameraCharacteristics.CONTROL_AE_COMPENSATION_RANGE)
 
         if (aeCompensationRange != null && exposureCompensationValue in aeCompensationRange) {
+            captureBuilder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO)
             captureBuilder.set(
-                CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION,
-                exposureCompensationValue
+                CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, exposureCompensationValue
             )
+            Log.d(TAG, "setExposureCompensation: called $exposureCompensationValue")
             captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
+
         }
+
+
     }
 
     /**
@@ -376,34 +425,40 @@ class CameraController(
     }
 
     fun setCustomFocusPercent(percent: Float) {
-        val characteristics = getCameraCharacteristics()
-        val sensorSize = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE)
+        try {
+            val characteristics = getCameraCharacteristics()
+            val sensorSize =
+                characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE)
 
-        val x = (sensorSize?.width()!! * percent / 100).toInt()
-        val y = (sensorSize.height() * percent / 100).toInt()
+            val x = (sensorSize?.width()!! * percent / 100).toInt()
+            val y = (sensorSize.height() * percent / 100).toInt()
 
-        val halfWidth = (sensorSize.width() * 0.1).toInt()  // Assuming 10% of the width for focus area
-        val halfHeight = (sensorSize.height() * 0.1).toInt()  // Assuming 10% of the height for focus area
+            val halfWidth =
+                (sensorSize.width() * 0.1).toInt()  // Assuming 10% of the width for focus area
+            val halfHeight =
+                (sensorSize.height() * 0.1).toInt()  // Assuming 10% of the height for focus area
 
-        val rect = Rect(x - halfWidth, y - halfHeight, x + halfWidth, y + halfHeight)
+            val rect = Rect(x - halfWidth, y - halfHeight, x + halfWidth, y + halfHeight)
 
-        val meteringRectangle = MeteringRectangle(rect, MeteringRectangle.METERING_WEIGHT_MAX)
+            val meteringRectangle = MeteringRectangle(rect, MeteringRectangle.METERING_WEIGHT_MAX)
 
-        val meteringRectangles = arrayOf(meteringRectangle)
+            val meteringRectangles = arrayOf(meteringRectangle)
 
-        // Disable auto focus
-        captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF)
+            // Disable auto focus
+            captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF)
 
-        // Set focus distance manually
-        val minFocusDistance = characteristics.get(CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE) ?: 0f
-        val focusDistance = minFocusDistance + (percent / 100) * (1 - minFocusDistance)
-        captureBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, focusDistance)
+            // Set focus distance manually
+            val minFocusDistance =
+                characteristics.get(CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE) ?: 0f
+            val focusDistance = minFocusDistance + (percent / 100) * (1 - minFocusDistance)
+            captureBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, focusDistance)
 
-        captureBuilder.set(CaptureRequest.CONTROL_AF_REGIONS, meteringRectangles)
-        captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
+            captureBuilder.set(CaptureRequest.CONTROL_AF_REGIONS, meteringRectangles)
+            captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
-
-
 
 
     /**
@@ -453,71 +508,6 @@ class CameraController(
         )
         captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
     }
-
-    fun setShutterSpeedMode(exposureMode: ExposureMode) {
-        when (exposureMode) {
-            ExposureMode.AUTO -> {
-                // Let the camera determine the exposure automatically (Auto mode)
-                // No need to set a specific exposure time, as the camera will handle it
-                setExposureTime(0) // Reset to default (0 means auto)
-            }
-            ExposureMode.EXPOSURE_1_4000 -> {
-                setExposureTime(2500) // Equivalent to 1/4000 second
-            }
-            ExposureMode.EXPOSURE_1_2000 -> {
-                setExposureTime(5000) // Equivalent to 1/2000 second
-            }
-            ExposureMode.EXPOSURE_1_1000 -> {
-                setExposureTime(10000) // Equivalent to 1/1000 second
-            }
-            ExposureMode.EXPOSURE_1_500 -> {
-                setExposureTime(20000) // Equivalent to 1/500 second
-            }
-            ExposureMode.EXPOSURE_1_250 -> {
-                setExposureTime(40000) // Equivalent to 1/250 second
-            }
-            ExposureMode.EXPOSURE_1_125 -> {
-                setExposureTime(80000) // Equivalent to 1/125 second
-            }
-            ExposureMode.EXPOSURE_1_60 -> {
-                setExposureTime(166666) // Equivalent to 1/60 second
-            }
-            ExposureMode.EXPOSURE_1_30 -> {
-                setExposureTime(333333) // Equivalent to 1/30 second
-            }
-            ExposureMode.EXPOSURE_1_15 -> {
-                setExposureTime(666666) // Equivalent to 1/15 second
-            }
-            ExposureMode.EXPOSURE_1_8 -> {
-                setExposureTime(1250000) // Equivalent to 1/8 second
-            }
-            ExposureMode.EXPOSURE_1_4 -> {
-                setExposureTime(2500000) // Equivalent to 1/4 second
-            }
-            ExposureMode.EXPOSURE_1_2 -> {
-                setExposureTime(5000000) // Equivalent to 1/2 second
-            }
-            ExposureMode.EXPOSURE_1 -> {
-                setExposureTime(10000000) // Equivalent to 1 second
-            }
-            ExposureMode.EXPOSURE_2 -> {
-                setExposureTime(20000000) // Equivalent to 2 seconds
-            }
-            ExposureMode.EXPOSURE_4 -> {
-                setExposureTime(40000000) // Equivalent to 4 seconds
-            }
-            ExposureMode.EXPOSURE_8 -> {
-                setExposureTime(80000000) // Equivalent to 8 seconds
-            }
-            ExposureMode.EXPOSURE_15 -> {
-                setExposureTime(150000000) // Equivalent to 15 seconds
-            }
-            ExposureMode.EXPOSURE_30 -> {
-                setExposureTime(300000000) // Equivalent to 30 seconds
-            }
-        }
-    }
-
 
 
 }
