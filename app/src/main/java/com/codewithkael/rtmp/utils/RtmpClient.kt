@@ -6,9 +6,9 @@ import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
-import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.CaptureRequest.Builder
 import android.util.Log
+import com.codewithkael.rtmp.remote.UserApi
 import com.haishinkit.event.Event
 import com.haishinkit.event.IEventListener
 import com.haishinkit.media.Camera2Source
@@ -23,9 +23,10 @@ import java.lang.reflect.Field
 import javax.inject.Singleton
 
 @Singleton
-class RtmpClient constructor(
+class RtmpClient(
     private val context: Context,
-    private val surfaceView: HkSurfaceView
+    private val surfaceView: HkSurfaceView,
+    private val userApi: UserApi
 ) : Camera2Source.Listener, IEventListener {
 
     private val TAG = "RtmpClient3"
@@ -40,6 +41,7 @@ class RtmpClient constructor(
     private var session: CameraCaptureSession?=null
     private  var cameraManager: CameraManager?=null
     private  var requestBuilder: Builder?=null
+    private var key:String?=null
 
     private var cameraController: CameraController? = null
     private fun getCameraController():CameraController? {
@@ -54,7 +56,6 @@ class RtmpClient constructor(
             null
         }
     }
-
 
     private var isCameraOpen = false
     private var isPublishing = false
@@ -73,6 +74,7 @@ class RtmpClient constructor(
     ) {
         Log.d(TAG, "kael start called publishing:$isPublishing camera:$isCameraOpen : $info ")
         if (currentCameraInfo == null) currentCameraInfo = info
+        this@RtmpClient.key = key
         url = "rtmp://141.11.184.69/live/$key"
 //        val url = "rtmp://192.168.126.131/live/$key"
         handleStartOrUpdate(info, url)
@@ -260,6 +262,17 @@ class RtmpClient constructor(
     override fun handleEvent(event: Event) {
             isPublishing = event.data.toString().contains("code=NetConnection.Connect.Success")
                     && event.type == "rtmpStatus"
+
+        if (isPublishing){
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    userApi.resetStream(key?:"")
+                }catch (e:Exception){
+                    Log.d(TAG, "handleEvent: ${e.message}")
+                    e.printStackTrace()
+                }
+            }
+        }
             Log.d(TAG, "handleStartOrUpdate: kael publisher setter 4 $isPublishing")
             Log.d(TAG, "handleStartOrUpdate: kael  ${event.data}")
 

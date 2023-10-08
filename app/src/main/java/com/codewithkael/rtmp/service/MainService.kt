@@ -70,8 +70,8 @@ class MainService : LifecycleService() {
         )
         surface = HkSurfaceView(this)
         val params = WindowManager.LayoutParams(
-            MATCH_PARENT,
-            500,
+            1,
+            1,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, // This type is suitable for overlays
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
@@ -136,7 +136,7 @@ class MainService : LifecycleService() {
             startServiceWithNotification()
             key = incomingIntent.getStringExtra("key")
             surface?.let { srf ->
-                rtmpClient = RtmpClient(this@MainService, srf)
+                rtmpClient = RtmpClient(this@MainService, srf,userApi)
                 val baseModel = CameraInfoModel()
 //                CoroutineScope(Dispatchers.Main).launch {
 //                    val totalDelay = 10000L
