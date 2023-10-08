@@ -120,8 +120,7 @@ class MainService : LifecycleService() {
     }
 
     private fun handleStopService() {
-//        stopForeground(true)
-//        startServiceWithNotification()
+        startServiceWithNotification()
         isServiceRunning = false
         socketClient.unregisterClients()
         socketClient.closeSocket()
