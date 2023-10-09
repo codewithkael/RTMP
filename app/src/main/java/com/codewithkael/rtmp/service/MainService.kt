@@ -7,10 +7,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.graphics.PixelFormat
-import android.os.Build
 import android.util.Log
 import android.view.Gravity
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.WindowManager
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
@@ -137,7 +135,7 @@ class MainService : LifecycleService() {
             key = incomingIntent.getStringExtra("key")
             surface?.let { srf ->
                 rtmpClient = RtmpClient(this@MainService, srf,userApi)
-                val baseModel = CameraInfoModel()
+//                val baseModel = CameraInfoModel()
 //                CoroutineScope(Dispatchers.Main).launch {
 //                    val totalDelay = 10000L
 //
@@ -285,25 +283,23 @@ class MainService : LifecycleService() {
     }
 
     private fun startServiceWithNotification() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val notificationChannel = NotificationChannel(
-                "channel1", "foreground", NotificationManager.IMPORTANCE_HIGH
-            )
+        val notificationChannel = NotificationChannel(
+            "channel1", "foreground", NotificationManager.IMPORTANCE_HIGH
+        )
 
-            val intent = Intent(this, MainServiceReceiver::class.java).apply {
-                action = "ACTION_EXIT"
-            }
-            val pendingIntent: PendingIntent =
-                PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
-
-            notificationManager.createNotificationChannel(notificationChannel)
-            val notification = NotificationCompat.Builder(
-                this, "channel1"
-            ).setSmallIcon(R.mipmap.ic_launcher)
-                .addAction(R.drawable.ic_end_call, "Exit", pendingIntent)
-
-            startForeground(1, notification.build())
+        val intent = Intent(this, MainServiceReceiver::class.java).apply {
+            action = "ACTION_EXIT"
         }
+        val pendingIntent: PendingIntent =
+            PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+
+        notificationManager.createNotificationChannel(notificationChannel)
+        val notification = NotificationCompat.Builder(
+            this, "channel1"
+        ).setSmallIcon(R.mipmap.ic_launcher)
+            .addAction(R.drawable.ic_end_call, "Exit", pendingIntent)
+
+        startForeground(1, notification.build())
     }
 
     interface Listener {

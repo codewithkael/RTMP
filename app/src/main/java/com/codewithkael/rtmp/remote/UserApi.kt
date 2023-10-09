@@ -26,6 +26,6 @@ interface UserApi {
     @POST("stream/restart")
     suspend fun resetStream(
         @Query("streamKey") streamKey:String
-    )
+    ):Response<Unit?>
 
 }

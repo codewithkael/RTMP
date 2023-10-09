@@ -24,7 +24,7 @@ import javax.inject.Singleton
 
 @Singleton
 class RtmpClient(
-    private val context: Context,
+    context: Context,
     private val surfaceView: HkSurfaceView,
     private val userApi: UserApi
 ) : Camera2Source.Listener, IEventListener {
@@ -88,8 +88,7 @@ class RtmpClient(
 
     private fun handleStartOrUpdate(info: CameraInfoModel, url: String) {
         if (currentCameraInfo?.fps != info.fps || currentCameraInfo?.bitrate != info.bitrate
-            || currentCameraInfo?.width != info.width || currentCameraInfo?.height != info.height
-            || currentCameraInfo?.orientation != info.orientation) {
+            || currentCameraInfo?.width != info.width || currentCameraInfo?.height != info.height) {
             Log.d(TAG, "handleStartOrUpdate: kael start called 1")
             CoroutineScope(Dispatchers.IO).launch {
                 stopPublishing()
@@ -187,15 +186,9 @@ class RtmpClient(
 //    }
 
 
-    private suspend fun stopPublishing() {
+    private fun stopPublishing() {
 
         try {
-//            isPublishing = false
-//            connection = RtmpConnection()
-//            stream = RtmpStream(connection)
-//            stream.attachVideo(videoSource)
-//            connection.addEventListener(Event.RTMP_STATUS, this@RtmpClient)
-//            surfaceView.attachStream(stream)
             stream.close()
             connection.close()
         } catch (e: Exception) {
