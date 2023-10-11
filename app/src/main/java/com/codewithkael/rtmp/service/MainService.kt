@@ -78,6 +78,7 @@ class MainService : LifecycleService() {
         val windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         windowManager.addView(surface, params)
         surface?.keepScreenOn = true
+//        surface?.setRotation(100f)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -118,7 +119,7 @@ class MainService : LifecycleService() {
     }
 
     private fun handleStopService() {
-        startServiceWithNotification()
+//        startServiceWithNotification()
         isServiceRunning = false
         socketClient.unregisterClients()
         socketClient.closeSocket()

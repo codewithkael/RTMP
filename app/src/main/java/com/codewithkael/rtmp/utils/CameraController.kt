@@ -52,6 +52,7 @@ class CameraController(
 
     fun updateCameraInfo(info: CameraInfoModel, exposureUpdated: Boolean) {
         Log.d(TAG, "updateCameraInfo: $exposureUpdated")
+//        textureView.rotation = 270f
         try {
             if (!exposureUpdated) {
                 setExposureTime(info.shutterSpeed)
@@ -65,12 +66,13 @@ class CameraController(
             } else {
                 setExposureCompensation(info.exposureCompensation)
             }
+
             setZoom(info.zoomLevel.toFloat())
             setCustomWhiteBalance(info.red, info.green, info.blue)
             if (info.flashLight) turnOnFlash() else turnOffFlash()
             //focus mode
             setCustomFocusPercent(info.focusPercent * 100)
-            setOrientation(270)
+//            setOrientation(info.orientation)
 
 
 //            setCameraOrientation(0.toString(),cameraManager,info.orientation)
@@ -80,9 +82,10 @@ class CameraController(
     }
 
     private fun setOrientation(orientation: Int) {
-        configureTransform(320,480,270)
-//        captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, orientation)
-//        captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
+//        configureTransform(320,480,270)
+        captureBuilder.addTarget(textureView.holder.surface)
+        captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, orientation)
+        captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
     }
 
     @SuppressLint("NewApi")

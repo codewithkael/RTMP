@@ -1,6 +1,7 @@
 package com.codewithkael.rtmp.utils
 
 import CameraController
+import android.annotation.SuppressLint
 import android.content.Context
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics
@@ -11,6 +12,7 @@ import android.util.Log
 import com.codewithkael.rtmp.remote.UserApi
 import com.haishinkit.event.Event
 import com.haishinkit.event.IEventListener
+import com.haishinkit.graphics.VideoGravity
 import com.haishinkit.media.Camera2Source
 import com.haishinkit.rtmp.RtmpConnection
 import com.haishinkit.rtmp.RtmpStream
@@ -138,6 +140,7 @@ class RtmpClient(
             stream.videoSetting.bitRate = info.bitrate // The bitRate of video output.
             stream.videoSetting.frameRate = if (info.fps<15) 15 else info.fps
             stream.videoSetting.IFrameInterval = 2
+//            stream.videoSetting.videoGravity = VideoGravity.RESIZE_ASPECT
             connection.connect(url)
             stream.publish(url.split("live/")[1])
             if (requestBuilder == null || session == null || cameraManager == null){
@@ -152,7 +155,7 @@ class RtmpClient(
                         val cameraSessionField: Field =
                             Camera2Source::class.java.getDeclaredField("session")
                         cameraSessionField.isAccessible = true
-                        delay(1000)
+                        delay(2000)
                         session = cameraSessionField.get(videoSource) as CameraCaptureSession
                         Log.d(TAG, "onCreate: $session")
                         updatePublishing(info,info.exposureCompensation != currentCameraInfo?.exposureCompensation)
@@ -196,6 +199,7 @@ class RtmpClient(
         }
     }
 
+    @SuppressLint("SuspiciousIndentation")
     override fun onCreateCaptureRequest(builder: Builder) {
         this.requestBuilder = builder
            requestCameraControlBuild(builder,false)
