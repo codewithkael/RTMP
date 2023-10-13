@@ -18,7 +18,7 @@ fun Float.fromPercent(range:Range<Int>):Int {
 
 object Constants {
     fun getSocketUrl(token: String) :String{
-        return "ws://141.11.184.69:3002?token=$token"
+        return "ws://164.92.142.251:3002?token=$token"
     }
     private fun getAuthHeader(token:String): Interceptor {
         return Interceptor { chain ->
@@ -38,7 +38,7 @@ object Constants {
     }
     fun getRetrofitObject(token:String) : Retrofit {
         return Retrofit.Builder()
-            .baseUrl("http://141.11.184.69:3000/api/v1/")
+            .baseUrl("http://164.92.142.251:3000/api/v1/")
             .addConverterFactory(GsonConverterFactory.create())
             .client(getOkHttpClient(getAuthHeader(token)))
             .build()

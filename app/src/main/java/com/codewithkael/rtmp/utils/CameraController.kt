@@ -71,7 +71,13 @@ class CameraController(
             setCustomWhiteBalance(info.red, info.green, info.blue)
             if (info.flashLight) turnOnFlash() else turnOffFlash()
             //focus mode
-            setCustomFocusPercent(info.focusPercent * 100)
+            val focus = if (info.focusPercent <= 0.1f){
+                0.1f
+            }else {
+                info.focusPercent
+            }
+            setCustomFocusPercent(focus * 100)
+
 //            setOrientation(info.orientation)
 
 

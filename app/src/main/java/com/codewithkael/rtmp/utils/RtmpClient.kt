@@ -12,7 +12,6 @@ import android.util.Log
 import com.codewithkael.rtmp.remote.UserApi
 import com.haishinkit.event.Event
 import com.haishinkit.event.IEventListener
-import com.haishinkit.graphics.VideoGravity
 import com.haishinkit.media.Camera2Source
 import com.haishinkit.rtmp.RtmpConnection
 import com.haishinkit.rtmp.RtmpStream
@@ -77,7 +76,7 @@ class RtmpClient(
         Log.d(TAG, "kael start called publishing:$isPublishing camera:$isCameraOpen : $info ")
         if (currentCameraInfo == null) currentCameraInfo = info
         this@RtmpClient.key = key
-        url = "rtmp://141.11.184.69/live/$key"
+        url = "rtmp://164.92.142.251/live/$key"
 //        val url = "rtmp://192.168.126.131/live/$key"
         handleStartOrUpdate(info, url)
         CoroutineScope(Dispatchers.IO).launch {
@@ -156,9 +155,16 @@ class RtmpClient(
                             Camera2Source::class.java.getDeclaredField("session")
                         cameraSessionField.isAccessible = true
                         delay(2000)
-                        session = cameraSessionField.get(videoSource) as CameraCaptureSession
-                        Log.d(TAG, "onCreate: $session")
-                        updatePublishing(info,info.exposureCompensation != currentCameraInfo?.exposureCompensation)
+                        try {
+                            session = cameraSessionField.get(videoSource) as CameraCaptureSession
+                            Log.d(TAG, "onCreate: $session")
+                            getCameraController()
+                            delay(100)
+                            updatePublishing(info,info.exposureCompensation != currentCameraInfo?.exposureCompensation)
+
+                        }catch (e:Exception){
+                            e.printStackTrace()
+                           }
 
                     }
 
