@@ -71,9 +71,9 @@ class CameraController(
             setCustomWhiteBalance(info.red, info.green, info.blue)
             if (info.flashLight) turnOnFlash() else turnOffFlash()
             //focus mode
-            val focus = if (info.focusPercent <= 0.1f){
+            val focus = if (info.focusPercent <= 0.1f) {
                 0.1f
-            }else {
+            } else {
                 info.focusPercent
             }
             setCustomFocusPercent(focus * 100)
@@ -95,11 +95,13 @@ class CameraController(
     }
 
     @SuppressLint("NewApi")
-    private fun configureTransform(viewWidth: Int, viewHeight: Int, rotation:Int) {
+    private fun configureTransform(viewWidth: Int, viewHeight: Int, rotation: Int) {
 
         val characteristics = cameraManager.getCameraCharacteristics(cameraId)
-        val streamConfigurationMap = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
-        val previewSize = streamConfigurationMap!!.getOutputSizes(SurfaceTexture::class.java)[0] // Choose an appropriate size
+        val streamConfigurationMap =
+            characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
+        val previewSize =
+            streamConfigurationMap!!.getOutputSizes(SurfaceTexture::class.java)[0] // Choose an appropriate size
 
         val matrix = Matrix()
         val viewRect = RectF(0f, 0f, viewWidth.toFloat(), viewHeight.toFloat())
@@ -111,8 +113,7 @@ class CameraController(
             bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY())
             matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL)
             val scale = max(
-                viewHeight.toFloat() / previewSize.height,
-                viewWidth.toFloat() / previewSize.width
+                viewHeight.toFloat() / previewSize.height, viewWidth.toFloat() / previewSize.width
             )
             matrix.postScale(scale, scale, centerX, centerY)
             matrix.postRotate((90 * (rotation - 2)).toFloat(), centerX, centerY)

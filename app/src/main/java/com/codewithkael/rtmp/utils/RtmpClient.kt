@@ -111,6 +111,7 @@ class RtmpClient(
                 }
             } else {
                 Log.d(TAG, "handleStartOrUpdate: kael start called 4")
+                Log.d(TAG, "startPublishing: update publishing 2 call shod")
 
                 updatePublishing(
                     info,
@@ -148,42 +149,45 @@ class RtmpClient(
 //            stream.videoSetting.videoGravity = VideoGravity.RESIZE_ASPECT
             connection.connect(url)
             stream.publish(url.split("live/")[1])
-            if (requestBuilder == null || session == null || cameraManager == null) {
-                try {
-                    CoroutineScope(Dispatchers.IO).launch {
-                        delay(2000)
-                        val cameraManagerField: Field =
-                            Camera2Source::class.java.getDeclaredField("manager")
-                        cameraManagerField.isAccessible = true
-                        cameraManager = cameraManagerField.get(videoSource) as CameraManager
+            CoroutineScope(Dispatchers.IO).launch {
+                delay(3000)
+                if (requestBuilder == null || session == null || cameraManager == null) {
+                    try {
+                        CoroutineScope(Dispatchers.IO).launch {
+                            val cameraManagerField: Field =
+                                Camera2Source::class.java.getDeclaredField("manager")
+                            cameraManagerField.isAccessible = true
+                            cameraManager = cameraManagerField.get(videoSource) as CameraManager
 
-                        val cameraSessionField: Field =
-                            Camera2Source::class.java.getDeclaredField("session")
-                        cameraSessionField.isAccessible = true
-                        delay(2000)
-                        try {
-                            session = cameraSessionField.get(videoSource) as CameraCaptureSession
-                            Log.d(TAG, "onCreate: $session")
-                            getCameraController()
-                            delay(1000)
-                            updatePublishing(
-                                info,
-                                info.exposureCompensation != currentCameraInfo?.exposureCompensation
-                            )
+                            val cameraSessionField: Field =
+                                Camera2Source::class.java.getDeclaredField("session")
+                            cameraSessionField.isAccessible = true
+                            try {
+                                session = cameraSessionField.get(videoSource) as CameraCaptureSession
+                                Log.d(TAG, "onCreate 11: $session")
+                                getCameraController()
+                                delay(1000)
+                                Log.d(TAG, "startPublishing: update publishing 1 call shod")
+                                updatePublishing(
+                                    info,
+                                    info.exposureCompensation != currentCameraInfo?.exposureCompensation
+                                )
 
-                        } catch (e: Exception) {
-                            e.printStackTrace()
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+
                         }
 
+                    } catch (e: NoSuchFieldException) {
+                        Log.d(TAG, "onCreate: ${e.message}")
+                        e.printStackTrace()
+                    } catch (e: IllegalAccessException) {
+                        Log.d(TAG, "onCreate: ${e.message}")
+                        e.printStackTrace()
                     }
-
-                } catch (e: NoSuchFieldException) {
-                    Log.d(TAG, "onCreate: ${e.message}")
-                    e.printStackTrace()
-                } catch (e: IllegalAccessException) {
-                    Log.d(TAG, "onCreate: ${e.message}")
-                    e.printStackTrace()
                 }
+
             }
 
         } catch (e: Exception) {
@@ -234,15 +238,13 @@ class RtmpClient(
                 }
                 isCameraOpen = true
             } else {
-                CoroutineScope(Dispatchers.IO).launch {
                     try {
                         CoroutineScope(Dispatchers.IO).launch {
-                            delay(2000)
                             val cameraManagerField: Field =
                                 Camera2Source::class.java.getDeclaredField("manager")
                             cameraManagerField.isAccessible = true
                             cameraManager = cameraManagerField.get(videoSource) as CameraManager
-
+                            delay(1000)
                             val cameraSessionField: Field =
                                 Camera2Source::class.java.getDeclaredField("session")
                             cameraSessionField.isAccessible = true
@@ -254,6 +256,12 @@ class RtmpClient(
                                     surfaceView
                                 )
                                 isCameraOpen = true
+                                currentCameraInfo?.let {
+                                    updatePublishing(
+                                        it,
+                                        false
+                                    )
+                                }
                             }
                         }
                     } catch (e: NoSuchFieldException) {
@@ -263,7 +271,6 @@ class RtmpClient(
                         Log.d(TAG, "onCreate: ${e.message}")
                         e.printStackTrace()
                     }
-                }
             }
         } catch (e: Exception) {
             e.printStackTrace()
