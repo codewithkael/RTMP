@@ -15,11 +15,18 @@
     <androidx.appcompat.widget.AppCompatButton
         android:layout_width="match_parent"
         android:layout_height="45dp"
+        android:visibility="gone"
         android:text="Save settings"
         android:id="@+id/saveBtn"
         app:layout_constraintTop_toBottomOf="@id/frameLayout"
         app:layout_constraintStart_toStartOf="parent" />
-
+    <com.haishinkit.view.HkSurfaceView
+        android:layout_width="match_parent"
+        android:layout_height="500dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:id="@+id/surface"/>
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

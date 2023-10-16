@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.codewithkael.rtmp.local.MySharedPreference
 import com.codewithkael.rtmp.remote.UserApi
+import com.codewithkael.rtmp.remote.models.GetStreamKeyResponse
 import com.codewithkael.rtmp.service.MainService
 import com.codewithkael.rtmp.service.MainServiceRepository
 import com.codewithkael.rtmp.utils.Constants
@@ -18,9 +19,9 @@ class MainViewModel @Inject constructor(
         Constants.getRetrofitObject(sharedPreference.getToken() ?: "")
             .create(UserApi::class.java)
 
-    fun init(done: (Boolean) -> Unit, signOut: () -> Unit) {
+    fun init(done: (Boolean, GetStreamKeyResponse?) -> Unit, signOut: () -> Unit) {
         if (MainService.isServiceRunning){
-            done(true)
+            done(true,null)
         } else {
             viewModelScope.launch {
                 val streamKey = try {
@@ -35,13 +36,13 @@ class MainViewModel @Inject constructor(
                             sharedPreference.setToken(null)
                             signOut()
                         }
-                        done(false)
+                        done(false,null)
                     } else {
-                        serviceRepository.startService(keyResponse.body()!!)
-                        done(true)
+//                        serviceRepository.startService(keyResponse.body()!!)
+                        done(true,keyResponse.body()!!)
                     }
                 } ?: kotlin.run {
-                    done(false)
+                    done(false,null)
                 }
             }
         }
