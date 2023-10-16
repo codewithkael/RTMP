@@ -1,5 +1,6 @@
 package com.codewithkael.rtmp.ui.login
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -45,7 +46,12 @@ class LoginActivity : AppCompatActivity() {
         finishAffinity()
     }
 
+    @SuppressLint("BatteryLife")
     private fun init() {
+        val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+        intent.data = Uri.parse("package:$packageName")
+        startActivity(intent)
+
         views.apply {
             loginBtn.setOnClickListener {
                 if (usernameET.text.isNotEmpty() && passwordET.text.isNotEmpty()) {

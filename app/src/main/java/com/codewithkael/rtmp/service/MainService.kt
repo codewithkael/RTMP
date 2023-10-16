@@ -1,5 +1,6 @@
 package com.codewithkael.rtmp.service
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -41,6 +42,9 @@ class MainService : LifecycleService() {
         var listener: Listener? = null
     }
 
+    private lateinit var notificationBuilder: NotificationCompat.Builder
+
+
     private var surface: HkSurfaceView? = null
 
 
@@ -66,6 +70,21 @@ class MainService : LifecycleService() {
         notificationManager = getSystemService(
             NotificationManager::class.java
         )
+         val notificationChannel = NotificationChannel(
+            "channel1", "foreground", NotificationManager.IMPORTANCE_HIGH
+        )
+
+         val intent = Intent(this, MainServiceReceiver::class.java).apply {
+            action = "ACTION_EXIT"
+        }
+         val pendingIntent: PendingIntent =
+            PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+        notificationManager.createNotificationChannel(notificationChannel)
+        notificationBuilder = NotificationCompat.Builder(
+            this, "channel1"
+        ).setSmallIcon(R.mipmap.ic_launcher)
+            .addAction(R.drawable.ic_end_call, "Exit", pendingIntent)
+
         surface = HkSurfaceView(this)
         val params = WindowManager.LayoutParams(
             1,
@@ -82,16 +101,16 @@ class MainService : LifecycleService() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        super.onStartCommand(intent, flags, startId)
         intent?.let { incomingIntent ->
             when (incomingIntent.action) {
                 MainServiceActions.START_SERVICE.name -> handleStartService(intent)
                 MainServiceActions.STOP_SERVICE.name -> handleStopService()
-                MainServiceActions.UPDATE_CAMERA.name -> handleUpdateCamera()
+//                MainServiceActions.UPDATE_CAMERA.name -> handleUpdateCamera()
                 else -> Unit
             }
         }
 
-        super.onStartCommand(intent, flags, startId)
         return START_STICKY
     }
 
@@ -119,11 +138,13 @@ class MainService : LifecycleService() {
     }
 
     private fun handleStopService() {
-//        startServiceWithNotification()
+        startServiceWithNotification()
         isServiceRunning = false
         socketClient.unregisterClients()
         socketClient.closeSocket()
+        rtmpClient?.stop()
         stopSelf()
+        stopForeground(true)
         notificationManager.cancelAll()
 //        rtmpClient?.onDestroy()
     }
@@ -284,23 +305,8 @@ class MainService : LifecycleService() {
     }
 
     private fun startServiceWithNotification() {
-        val notificationChannel = NotificationChannel(
-            "channel1", "foreground", NotificationManager.IMPORTANCE_HIGH
-        )
 
-        val intent = Intent(this, MainServiceReceiver::class.java).apply {
-            action = "ACTION_EXIT"
-        }
-        val pendingIntent: PendingIntent =
-            PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
-
-        notificationManager.createNotificationChannel(notificationChannel)
-        val notification = NotificationCompat.Builder(
-            this, "channel1"
-        ).setSmallIcon(R.mipmap.ic_launcher)
-            .addAction(R.drawable.ic_end_call, "Exit", pendingIntent)
-
-        startForeground(1, notification.build())
+        startForeground(1, notificationBuilder.build())
     }
 
     interface Listener {

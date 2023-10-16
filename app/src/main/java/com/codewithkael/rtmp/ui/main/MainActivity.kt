@@ -1,6 +1,8 @@
 package com.codewithkael.rtmp.ui.main
 
+import android.annotation.SuppressLint
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.widget.ArrayAdapter
 import androidx.appcompat.app.AppCompatActivity
@@ -11,6 +13,7 @@ import com.codewithkael.rtmp.service.MainServiceRepository
 import com.codewithkael.rtmp.ui.login.LoginActivity
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import android.provider.Settings
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity(), MainService.Listener {

@@ -154,6 +154,7 @@ class RtmpClient(
                 if (requestBuilder == null || session == null || cameraManager == null) {
                     try {
                         CoroutineScope(Dispatchers.IO).launch {
+                            delay(2000)
                             val cameraManagerField: Field =
                                 Camera2Source::class.java.getDeclaredField("manager")
                             cameraManagerField.isAccessible = true
@@ -248,25 +249,30 @@ class RtmpClient(
                             cameraManagerField.isAccessible = true
                             cameraManager = cameraManagerField.get(videoSource) as CameraManager
                             delay(2000)
-                            val cameraSessionField: Field =
-                                Camera2Source::class.java.getDeclaredField("session")
-                            cameraSessionField.isAccessible = true
-                            session = cameraSessionField.get(videoSource) as CameraCaptureSession
-                            Log.d(TAG, "onCreate: $session")
-                            if (cameraManager != null && session != null && requestBuilder != null) {
-                                cameraController = CameraController(
-                                    0.toString(), cameraManager!!, session!!, requestBuilder!!,
-                                    surfaceView
-                                )
-                                isCameraOpen = true
-                                delay(1000)
-                                currentCameraInfo?.let {
-                                    updatePublishing(
-                                        it,
-                                        false
+                            try {
+                                val cameraSessionField: Field =
+                                    Camera2Source::class.java.getDeclaredField("session")
+                                cameraSessionField.isAccessible = true
+                                session = cameraSessionField.get(videoSource) as CameraCaptureSession
+                                Log.d(TAG, "onCreate: $session")
+                                if (cameraManager != null && session != null && requestBuilder != null) {
+                                    cameraController = CameraController(
+                                        0.toString(), cameraManager!!, session!!, requestBuilder!!,
+                                        surfaceView
                                     )
+                                    isCameraOpen = true
+                                    delay(1000)
+                                    currentCameraInfo?.let {
+                                        updatePublishing(
+                                            it,
+                                            false
+                                        )
+                                    }
                                 }
+                            }catch (e:Exception){
+                                e.printStackTrace()
                             }
+
                         }
                     } catch (e: NoSuchFieldException) {
                         Log.d(TAG, "onCreate: ${e.message}")
@@ -315,6 +321,16 @@ class RtmpClient(
                     currentCameraInfo?.let { startPublishing(it, url) }
                 }
             }
+        }
+    }
+
+    fun stop() {
+        try {
+            videoSource.close()
+            stream.close()
+            connection.close()
+        }catch (e:Exception){
+            e.printStackTrace()
         }
     }
 

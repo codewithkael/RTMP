@@ -30,6 +30,7 @@ class SocketClient @Inject constructor(
 
     private val job = CoroutineScope(Dispatchers.IO)
     private var listener: Listener? = null
+    private var isReconnectingStopped = false
 
     fun initialize(listener: Listener) {
         Log.d(TAG, "initialize: ${Constants.getSocketUrl(preference.getToken()!!)}")
@@ -54,7 +55,9 @@ class SocketClient @Inject constructor(
                         Log.d(TAG, "onClose: closed")
                         job.launch {
                             delay(5000)
-                            initialize(listener)
+                            if (!isReconnectingStopped){
+                                initialize(listener)
+                            }
                         }
                     }
 
@@ -88,6 +91,7 @@ class SocketClient @Inject constructor(
     fun closeSocket() {
         try {
             socket?.close()
+            isReconnectingStopped = true
         } catch (e: Exception) {
             e.printStackTrace()
         }
