@@ -1,5 +1,4 @@
 import android.annotation.SuppressLint
-import android.content.Context
 import android.graphics.Matrix
 import android.graphics.Rect
 import android.graphics.RectF
@@ -16,11 +15,9 @@ import android.util.Log
 import android.util.Range
 import android.util.Size
 import android.view.Surface
-import android.view.WindowManager
 import com.codewithkael.rtmp.utils.CameraInfoModel
 import com.codewithkael.rtmp.utils.ExposureMode
 import com.codewithkael.rtmp.utils.fromPercent
-import com.haishinkit.view.HkSurfaceView
 import kotlin.math.max
 
 /**
@@ -36,7 +33,6 @@ class CameraController(
     private val cameraManager: CameraManager,
     private val captureSession: CameraCaptureSession,
     private val captureBuilder: CaptureRequest.Builder,
-    private val textureView: HkSurfaceView
 ) {
     private val TAG = "CameraController"
 
@@ -87,12 +83,12 @@ class CameraController(
         }
     }
 
-    private fun setOrientation(orientation: Int) {
-//        configureTransform(320,480,270)
-        captureBuilder.addTarget(textureView.holder.surface)
-        captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, orientation)
-        captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
-    }
+//    private fun setOrientation(orientation: Int) {
+////        configureTransform(320,480,270)
+//        captureBuilder.addTarget(textureView.holder.surface)
+//        captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, orientation)
+//        captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
+//    }
 
     @SuppressLint("NewApi")
     private fun configureTransform(viewWidth: Int, viewHeight: Int, rotation: Int) {
@@ -121,39 +117,39 @@ class CameraController(
             matrix.postRotate(180f, centerX, centerY)
         }
 
-        textureView.transformMatrixToGlobal(matrix)
+//        textureView.transformMatrixToGlobal(matrix)
     }
 
 
-    fun setCameraOrientation(cameraId: String, cameraManager: CameraManager, degrees: Int) {
-        val characteristics = cameraManager.getCameraCharacteristics(cameraId)
-        val configMap = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
-
-        // Find the output size for the preview
-        val outputSizes = configMap?.getOutputSizes(HkSurfaceView::class.java) ?: emptyArray()
-        val previewSize = chooseOptimalSize(
-            outputSizes, // List of available preview sizes
-            1920, 1080 // Desired width and height
-        )
-
-        // Configure the texture view size based on orientation
-        val orientation = (degrees + getDeviceOrientation()) % 360
-//        if (orientation == 90 || orientation == 270) {
-//            // Swap width and height if in landscape
-//            textureView.setLayoutParams(ViewGroup.LayoutParams(context))
-//            textureView.setAspectRatio(previewSize.height, previewSize.width)
-//        } else {
-//            textureView.setAspectRatio(previewSize.width, previewSize.height)
-//        }
-
-        // Apply the rotation to the texture view
-        textureView.rotation = degrees.toFloat()
-
-        // Set the orientation in the capture request
-        captureBuilder.set(
-            CaptureRequest.JPEG_ORIENTATION, getJpegOrientation(characteristics, orientation)
-        )
-    }
+//    fun setCameraOrientation(cameraId: String, cameraManager: CameraManager, degrees: Int) {
+//        val characteristics = cameraManager.getCameraCharacteristics(cameraId)
+//        val configMap = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
+//
+//        // Find the output size for the preview
+//        val outputSizes = configMap?.getOutputSizes(HkSurfaceView::class.java) ?: emptyArray()
+//        val previewSize = chooseOptimalSize(
+//            outputSizes, // List of available preview sizes
+//            1920, 1080 // Desired width and height
+//        )
+//
+//        // Configure the texture view size based on orientation
+//        val orientation = (degrees + getDeviceOrientation()) % 360
+////        if (orientation == 90 || orientation == 270) {
+////            // Swap width and height if in landscape
+////            textureView.setLayoutParams(ViewGroup.LayoutParams(context))
+////            textureView.setAspectRatio(previewSize.height, previewSize.width)
+////        } else {
+////            textureView.setAspectRatio(previewSize.width, previewSize.height)
+////        }
+//
+//        // Apply the rotation to the texture view
+////        textureView.rotation = degrees.toFloat()
+//
+//        // Set the orientation in the capture request
+//        captureBuilder.set(
+//            CaptureRequest.JPEG_ORIENTATION, getJpegOrientation(characteristics, orientation)
+//        )
+//    }
 
     // Function to choose an optimal size based on desired dimensions
     private fun chooseOptimalSize(choices: Array<Size>, width: Int, height: Int): Size {
@@ -164,18 +160,18 @@ class CameraController(
     }
 
     // Function to get the device orientation (in degrees)
-    private fun getDeviceOrientation(): Int {
-        val displayRotation =
-            (textureView.context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay.rotation
-
-        return when (displayRotation) {
-            Surface.ROTATION_0 -> 0
-            Surface.ROTATION_90 -> 90
-            Surface.ROTATION_180 -> 180
-            Surface.ROTATION_270 -> 270
-            else -> 0
-        }
-    }
+//    private fun getDeviceOrientation(): Int {
+////        val displayRotation =
+////            (textureView.context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay.rotation
+//
+////        return when (displayRotation) {
+////            Surface.ROTATION_0 -> 0
+////            Surface.ROTATION_90 -> 90
+////            Surface.ROTATION_180 -> 180
+////            Surface.ROTATION_270 -> 270
+////            else -> 0
+////        }
+//    }
 
     // Function to get the JPEG orientation based on device orientation
     private fun getJpegOrientation(

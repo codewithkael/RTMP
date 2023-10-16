@@ -235,7 +235,7 @@ class RtmpClient(
                     session?.let { it1 ->
                         CameraController(
                             0.toString(),
-                            it, it1, builder, surfaceView
+                            it, it1, builder
                         )
                     }
                 }
@@ -257,8 +257,7 @@ class RtmpClient(
                                 Log.d(TAG, "onCreate: $session")
                                 if (cameraManager != null && session != null && requestBuilder != null) {
                                     cameraController = CameraController(
-                                        0.toString(), cameraManager!!, session!!, requestBuilder!!,
-                                        surfaceView
+                                        0.toString(), cameraManager!!, session!!, requestBuilder!!
                                     )
                                     isCameraOpen = true
                                     delay(1000)
