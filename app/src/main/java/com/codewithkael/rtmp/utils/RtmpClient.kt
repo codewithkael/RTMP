@@ -163,11 +163,13 @@ class RtmpClient(
                                 Camera2Source::class.java.getDeclaredField("session")
                             cameraSessionField.isAccessible = true
                             try {
+                                delay(2000)
                                 session = cameraSessionField.get(videoSource) as CameraCaptureSession
                                 Log.d(TAG, "onCreate 11: $session")
                                 getCameraController()
-                                delay(1000)
+                                delay(2000)
                                 Log.d(TAG, "startPublishing: update publishing 1 call shod")
+                                delay(1000)
                                 updatePublishing(
                                     info,
                                     info.exposureCompensation != currentCameraInfo?.exposureCompensation
@@ -240,11 +242,12 @@ class RtmpClient(
             } else {
                     try {
                         CoroutineScope(Dispatchers.IO).launch {
+                            delay(2000)
                             val cameraManagerField: Field =
                                 Camera2Source::class.java.getDeclaredField("manager")
                             cameraManagerField.isAccessible = true
                             cameraManager = cameraManagerField.get(videoSource) as CameraManager
-                            delay(1000)
+                            delay(2000)
                             val cameraSessionField: Field =
                                 Camera2Source::class.java.getDeclaredField("session")
                             cameraSessionField.isAccessible = true
@@ -256,6 +259,7 @@ class RtmpClient(
                                     surfaceView
                                 )
                                 isCameraOpen = true
+                                delay(1000)
                                 currentCameraInfo?.let {
                                     updatePublishing(
                                         it,
