@@ -1,4 +1,5 @@
 import android.annotation.SuppressLint
+import android.content.Context
 import android.graphics.Matrix
 import android.graphics.Rect
 import android.graphics.RectF
@@ -8,6 +9,7 @@ import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CameraMetadata
+import android.hardware.camera2.CameraMetadata.CONTROL_AE_MODE_OFF
 import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.params.MeteringRectangle
 import android.hardware.camera2.params.RggbChannelVector
@@ -15,9 +17,11 @@ import android.util.Log
 import android.util.Range
 import android.util.Size
 import android.view.Surface
+import android.view.WindowManager
 import com.codewithkael.rtmp.utils.CameraInfoModel
 import com.codewithkael.rtmp.utils.ExposureMode
 import com.codewithkael.rtmp.utils.fromPercent
+import com.haishinkit.view.HkSurfaceView
 import kotlin.math.max
 
 /**
@@ -33,6 +37,7 @@ class CameraController(
     private val cameraManager: CameraManager,
     private val captureSession: CameraCaptureSession,
     private val captureBuilder: CaptureRequest.Builder,
+    private val textureView: HkSurfaceView
 ) {
     private val TAG = "CameraController"
 
@@ -62,33 +67,27 @@ class CameraController(
             } else {
                 setExposureCompensation(info.exposureCompensation)
             }
-
             setZoom(info.zoomLevel.toFloat())
             setCustomWhiteBalance(info.red, info.green, info.blue)
             if (info.flashLight) turnOnFlash() else turnOffFlash()
-            //focus mode
+//            //focus mode
             val focus = if (info.focusPercent <= 0.1f) {
                 0.1f
             } else {
                 info.focusPercent
             }
             setCustomFocusPercent(focus * 100)
-
-//            setOrientation(info.orientation)
-
-
-//            setCameraOrientation(0.toString(),cameraManager,info.orientation)
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-//    private fun setOrientation(orientation: Int) {
-////        configureTransform(320,480,270)
-//        captureBuilder.addTarget(textureView.holder.surface)
-//        captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, orientation)
-//        captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
-//    }
+    private fun setOrientation(orientation: Int) {
+//        configureTransform(320,480,270)
+        captureBuilder.addTarget(textureView.holder.surface)
+        captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, orientation)
+        captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
+    }
 
     @SuppressLint("NewApi")
     private fun configureTransform(viewWidth: Int, viewHeight: Int, rotation: Int) {
@@ -117,39 +116,39 @@ class CameraController(
             matrix.postRotate(180f, centerX, centerY)
         }
 
-//        textureView.transformMatrixToGlobal(matrix)
+        textureView.transformMatrixToGlobal(matrix)
     }
 
 
-//    fun setCameraOrientation(cameraId: String, cameraManager: CameraManager, degrees: Int) {
-//        val characteristics = cameraManager.getCameraCharacteristics(cameraId)
-//        val configMap = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
-//
-//        // Find the output size for the preview
-//        val outputSizes = configMap?.getOutputSizes(HkSurfaceView::class.java) ?: emptyArray()
-//        val previewSize = chooseOptimalSize(
-//            outputSizes, // List of available preview sizes
-//            1920, 1080 // Desired width and height
-//        )
-//
-//        // Configure the texture view size based on orientation
-//        val orientation = (degrees + getDeviceOrientation()) % 360
-////        if (orientation == 90 || orientation == 270) {
-////            // Swap width and height if in landscape
-////            textureView.setLayoutParams(ViewGroup.LayoutParams(context))
-////            textureView.setAspectRatio(previewSize.height, previewSize.width)
-////        } else {
-////            textureView.setAspectRatio(previewSize.width, previewSize.height)
-////        }
-//
-//        // Apply the rotation to the texture view
-////        textureView.rotation = degrees.toFloat()
-//
-//        // Set the orientation in the capture request
-//        captureBuilder.set(
-//            CaptureRequest.JPEG_ORIENTATION, getJpegOrientation(characteristics, orientation)
-//        )
-//    }
+    fun setCameraOrientation(cameraId: String, cameraManager: CameraManager, degrees: Int) {
+        val characteristics = cameraManager.getCameraCharacteristics(cameraId)
+        val configMap = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
+
+        // Find the output size for the preview
+        val outputSizes = configMap?.getOutputSizes(HkSurfaceView::class.java) ?: emptyArray()
+        val previewSize = chooseOptimalSize(
+            outputSizes, // List of available preview sizes
+            1920, 1080 // Desired width and height
+        )
+
+        // Configure the texture view size based on orientation
+        val orientation = (degrees + getDeviceOrientation()) % 360
+//        if (orientation == 90 || orientation == 270) {
+//            // Swap width and height if in landscape
+//            textureView.setLayoutParams(ViewGroup.LayoutParams(context))
+//            textureView.setAspectRatio(previewSize.height, previewSize.width)
+//        } else {
+//            textureView.setAspectRatio(previewSize.width, previewSize.height)
+//        }
+
+        // Apply the rotation to the texture view
+        textureView.rotation = degrees.toFloat()
+
+        // Set the orientation in the capture request
+        captureBuilder.set(
+            CaptureRequest.JPEG_ORIENTATION, getJpegOrientation(characteristics, orientation)
+        )
+    }
 
     // Function to choose an optimal size based on desired dimensions
     private fun chooseOptimalSize(choices: Array<Size>, width: Int, height: Int): Size {
@@ -160,18 +159,18 @@ class CameraController(
     }
 
     // Function to get the device orientation (in degrees)
-//    private fun getDeviceOrientation(): Int {
-////        val displayRotation =
-////            (textureView.context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay.rotation
-//
-////        return when (displayRotation) {
-////            Surface.ROTATION_0 -> 0
-////            Surface.ROTATION_90 -> 90
-////            Surface.ROTATION_180 -> 180
-////            Surface.ROTATION_270 -> 270
-////            else -> 0
-////        }
-//    }
+    private fun getDeviceOrientation(): Int {
+        val displayRotation =
+            (textureView.context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay.rotation
+
+        return when (displayRotation) {
+            Surface.ROTATION_0 -> 0
+            Surface.ROTATION_90 -> 90
+            Surface.ROTATION_180 -> 180
+            Surface.ROTATION_270 -> 270
+            else -> 0
+        }
+    }
 
     // Function to get the JPEG orientation based on device orientation
     private fun getJpegOrientation(
@@ -249,7 +248,9 @@ class CameraController(
     private fun setIso(isoValue: Int) {
         val isoRange = getIsoRange()
         if (isoRange != null && isoValue in isoRange) {
-            captureBuilder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_OFF)
+//            captureBuilder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_OFF)
+            captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CONTROL_AE_MODE_OFF)
+
             captureBuilder.set(CaptureRequest.SENSOR_SENSITIVITY, isoValue)
             captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
             Log.d(TAG, "setIso: called")
@@ -276,95 +277,91 @@ class CameraController(
     // Function to set exposure time (exposureTime in nanoseconds)
     private fun setExposureTime(exposureTime: ExposureMode?) {
         val range = getExposureTimeRange()
-        if (exposureTime == ExposureMode.AUTO) {
-            captureBuilder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO)
-            captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
-        } else {
-            val time = when (exposureTime) {
 
-                ExposureMode.EXPOSURE_1_4000 -> {
+        val time = when (exposureTime) {
 
-                    range?.lower // Equivalent to 1/4000 second
-                }
+            ExposureMode.EXPOSURE_1_4000 -> {
 
-                ExposureMode.EXPOSURE_1_2000 -> {
-                    range?.lower?.times(2) // Equivalent to 1/2000 second
-                }
-
-                ExposureMode.EXPOSURE_1_1000 -> {
-                    range?.lower?.times(4) // Equivalent to 1/1000 second
-                }
-
-                ExposureMode.EXPOSURE_1_500 -> {
-                    range?.lower?.times(8) // Equivalent to 1/500 second
-                }
-
-                ExposureMode.EXPOSURE_1_250 -> {
-                    range?.lower?.times(16)// Equivalent to 1/250 second
-                }
-
-                ExposureMode.EXPOSURE_1_125 -> {
-                    range?.lower?.times(32)// Equivalent to 1/125 second
-                }
-
-                ExposureMode.EXPOSURE_1_60 -> {
-                    range?.lower?.times(64) // Equivalent to 1/60 second
-                }
-
-                ExposureMode.EXPOSURE_1_30 -> {
-                    range?.lower?.times(128) // Equivalent to 1/30 second
-                }
-
-                ExposureMode.EXPOSURE_1_15 -> {
-                    range?.upper?.div(256) // Equivalent to 1/15 second
-                }
-
-                ExposureMode.EXPOSURE_1_8 -> {
-                    range?.lower?.times(256) // Equivalent to 1/8 second
-                }
-
-                ExposureMode.EXPOSURE_1_4 -> {
-                    range?.upper?.div(128) // Equivalent to 1/4 second
-                }
-
-                ExposureMode.EXPOSURE_1_2 -> {
-                    range?.upper?.div(64) // Equivalent to 1/2 second
-                }
-
-                ExposureMode.EXPOSURE_1 -> {
-                    range?.upper?.div(32) // Equivalent to 1 second
-                }
-
-                ExposureMode.EXPOSURE_2 -> {
-                    range?.upper?.div(16) // Equivalent to 2 seconds
-                }
-
-                ExposureMode.EXPOSURE_4 -> {
-                    range?.upper?.div(8) // Equivalent to 4 seconds
-                }
-
-                ExposureMode.EXPOSURE_8 -> {
-                    range?.upper?.div(4) // Equivalent to 8 seconds
-                }
-
-                ExposureMode.EXPOSURE_15 -> {
-                    range?.upper?.div(2) // Equivalent to 15 seconds
-                }
-
-                ExposureMode.EXPOSURE_30 -> {
-                    range?.upper // Equivalent to 30 seconds
-                }
-
-                else -> {
-                    range?.upper?.div(256)
-                }
+                range?.lower // Equivalent to 1/4000 second
             }
-            captureBuilder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_OFF)
-            captureBuilder.set(CaptureRequest.SENSOR_EXPOSURE_TIME, time)
-            captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
-            Log.d(TAG, "setExposureTime: called $time range$range")
 
+            ExposureMode.EXPOSURE_1_2000 -> {
+                range?.lower?.times(2) // Equivalent to 1/2000 second
+            }
+
+            ExposureMode.EXPOSURE_1_1000 -> {
+                range?.lower?.times(4) // Equivalent to 1/1000 second
+            }
+
+            ExposureMode.EXPOSURE_1_500 -> {
+                range?.lower?.times(8) // Equivalent to 1/500 second
+            }
+
+            ExposureMode.EXPOSURE_1_250 -> {
+                range?.lower?.times(16)// Equivalent to 1/250 second
+            }
+
+            ExposureMode.EXPOSURE_1_125 -> {
+                range?.lower?.times(32)// Equivalent to 1/125 second
+            }
+
+            ExposureMode.EXPOSURE_1_60 -> {
+                range?.lower?.times(64) // Equivalent to 1/60 second
+            }
+
+            ExposureMode.EXPOSURE_1_30 -> {
+                range?.lower?.times(128) // Equivalent to 1/30 second
+            }
+
+            ExposureMode.EXPOSURE_1_15 -> {
+                range?.upper?.div(256) // Equivalent to 1/15 second
+            }
+
+            ExposureMode.EXPOSURE_1_8 -> {
+                range?.lower?.times(256) // Equivalent to 1/8 second
+            }
+
+            ExposureMode.EXPOSURE_1_4 -> {
+                range?.upper?.div(128) // Equivalent to 1/4 second
+            }
+
+            ExposureMode.EXPOSURE_1_2 -> {
+                range?.upper?.div(64) // Equivalent to 1/2 second
+            }
+
+            ExposureMode.EXPOSURE_1 -> {
+                range?.upper?.div(32) // Equivalent to 1 second
+            }
+
+            ExposureMode.EXPOSURE_2 -> {
+                range?.upper?.div(16) // Equivalent to 2 seconds
+            }
+
+            ExposureMode.EXPOSURE_4 -> {
+                range?.upper?.div(8) // Equivalent to 4 seconds
+            }
+
+            ExposureMode.EXPOSURE_8 -> {
+                range?.upper?.div(4) // Equivalent to 8 seconds
+            }
+
+            ExposureMode.EXPOSURE_15 -> {
+                range?.upper?.div(2) // Equivalent to 15 seconds
+            }
+
+            ExposureMode.EXPOSURE_30 -> {
+                range?.upper // Equivalent to 30 seconds
+            }
+
+            else -> {
+                range?.upper?.div(256)
+            }
         }
+//            captureBuilder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_OFF)
+        captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CONTROL_AE_MODE_OFF)
+        captureBuilder.set(CaptureRequest.SENSOR_EXPOSURE_TIME, time)
+        captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
+        Log.d(TAG, "setExposureTime: called $time range$range")
 
     }
 
@@ -417,17 +414,38 @@ class CameraController(
         val aeCompensationRange =
             getCameraCharacteristics().get(CameraCharacteristics.CONTROL_AE_COMPENSATION_RANGE)
 
-        if (aeCompensationRange != null && exposureCompensationValue in aeCompensationRange) {
+        try {
+//            val convertedVersion = exposureCompensationValue.toFloat().fromPercent(Range(aeCompensationRange!!.lower-1,aeCompensationRange.upper+1))
+            val convertedVersion = mapNumber(
+                exposureCompensationValue, -20, 20,
+                aeCompensationRange!!.lower, aeCompensationRange.upper
+            )
+            Log.d(TAG, "setExposureCompensation: range chosen $convertedVersion")
             captureBuilder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO)
             captureBuilder.set(
-                CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, exposureCompensationValue
+                CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, convertedVersion
             )
-            Log.d(TAG, "setExposureCompensation: called $exposureCompensationValue")
+            Log.d(TAG, "setExposureCompensation: called $convertedVersion")
             captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
-
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
 
 
+    }
+
+    fun mapNumber(
+        value: Int,
+        originalRangeStart: Int,
+        originalRangeEnd: Int,
+        targetRangeStart: Int,
+        targetRangeEnd: Int
+    ): Int {
+        // Check if the input number is within the initial range
+        if (value !in originalRangeStart..originalRangeEnd) {
+            throw IllegalArgumentException("Input number is outside the initial range")
+        }
+        return targetRangeStart + (value - originalRangeStart) * (targetRangeEnd - targetRangeStart) / (originalRangeEnd - originalRangeStart)
     }
 
     /**

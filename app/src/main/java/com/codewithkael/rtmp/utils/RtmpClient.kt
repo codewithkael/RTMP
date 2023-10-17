@@ -146,7 +146,6 @@ class RtmpClient(
             stream.videoSetting.bitRate = info.bitrate // The bitRate of video output.
             stream.videoSetting.frameRate = if (info.fps < 15) 15 else info.fps
             stream.videoSetting.IFrameInterval = 2
-//            stream.videoSetting.videoGravity = VideoGravity.RESIZE_ASPECT
             connection.connect(url)
             stream.publish(url.split("live/")[1])
             CoroutineScope(Dispatchers.IO).launch {
@@ -235,51 +234,52 @@ class RtmpClient(
                     session?.let { it1 ->
                         CameraController(
                             0.toString(),
-                            it, it1, builder
+                            it, it1, builder, surfaceView
                         )
                     }
                 }
                 isCameraOpen = true
             } else {
-                    try {
-                        CoroutineScope(Dispatchers.IO).launch {
-                            delay(2000)
-                            val cameraManagerField: Field =
-                                Camera2Source::class.java.getDeclaredField("manager")
-                            cameraManagerField.isAccessible = true
-                            cameraManager = cameraManagerField.get(videoSource) as CameraManager
-                            delay(2000)
-                            try {
-                                val cameraSessionField: Field =
-                                    Camera2Source::class.java.getDeclaredField("session")
-                                cameraSessionField.isAccessible = true
-                                session = cameraSessionField.get(videoSource) as CameraCaptureSession
-                                Log.d(TAG, "onCreate: $session")
-                                if (cameraManager != null && session != null && requestBuilder != null) {
-                                    cameraController = CameraController(
-                                        0.toString(), cameraManager!!, session!!, requestBuilder!!
+                try {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        delay(2000)
+                        val cameraManagerField: Field =
+                            Camera2Source::class.java.getDeclaredField("manager")
+                        cameraManagerField.isAccessible = true
+                        cameraManager = cameraManagerField.get(videoSource) as CameraManager
+                        delay(2000)
+                        try {
+                            val cameraSessionField: Field =
+                                Camera2Source::class.java.getDeclaredField("session")
+                            cameraSessionField.isAccessible = true
+                            session = cameraSessionField.get(videoSource) as CameraCaptureSession
+                            Log.d(TAG, "onCreate: $session")
+                            if (cameraManager != null && session != null && requestBuilder != null) {
+                                cameraController = CameraController(
+                                    0.toString(), cameraManager!!, session!!, requestBuilder!!,
+                                    surfaceView
+                                )
+                                isCameraOpen = true
+                                delay(1000)
+                                currentCameraInfo?.let {
+                                    updatePublishing(
+                                        it,
+                                        false
                                     )
-                                    isCameraOpen = true
-                                    delay(1000)
-                                    currentCameraInfo?.let {
-                                        updatePublishing(
-                                            it,
-                                            false
-                                        )
-                                    }
                                 }
-                            }catch (e:Exception){
-                                e.printStackTrace()
                             }
-
+                        }catch (e:Exception){
+                            e.printStackTrace()
                         }
-                    } catch (e: NoSuchFieldException) {
-                        Log.d(TAG, "onCreate: ${e.message}")
-                        e.printStackTrace()
-                    } catch (e: IllegalAccessException) {
-                        Log.d(TAG, "onCreate: ${e.message}")
-                        e.printStackTrace()
+
                     }
+                } catch (e: NoSuchFieldException) {
+                    Log.d(TAG, "onCreate: ${e.message}")
+                    e.printStackTrace()
+                } catch (e: IllegalAccessException) {
+                    Log.d(TAG, "onCreate: ${e.message}")
+                    e.printStackTrace()
+                }
             }
         } catch (e: Exception) {
             e.printStackTrace()
