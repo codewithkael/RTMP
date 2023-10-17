@@ -193,89 +193,89 @@ class MainActivity : AppCompatActivity(), MainService.Listener {
         } else {
             viewModel.init({ isDone, response ->
                 if (isDone && response!=null) {
-//                    finishAffinity()
+                    finishAffinity()
 //                    renderUi()
-                    CoroutineScope(Dispatchers.IO).launch {
-                        rtmpClient = RtmpClient(this@MainActivity, views.surface, userApi)
-                        socketClient.initialize(object : SocketClient.Listener {
-                            override fun onConnectionStateChanged(state: SocketState) {
-                                if (state == SocketState.Connected) {
-
-                                    CoroutineScope(Dispatchers.IO).launch {
-                                        val result = try {
-                                            userApi.getCameraConfig()
-                                        } catch (e: Exception) {
-                                            null
-                                        }
-
-                                        Log.d(tag, "onConnectionStateChanged: $result")
-                                        result?.let { cameraInfoModel ->
-                                            Log.d(tag, "onConnectionStateChanged: 1")
-                                            mySharedPreference.setCameraModel(cameraInfoModel)
-                                            withContext(Dispatchers.Main) {
-                                                rtmpClient?.start(
-                                                    cameraInfoModel, response.streamKey
-                                                ) {
-//                                                if (!MainService.isUiActive && !it) {
-//                                                    openAppReopenCamera(cameraInfoModel, key)
+//                    CoroutineScope(Dispatchers.IO).launch {
+//                        rtmpClient = RtmpClient(this@MainActivity, views.surface, userApi)
+//                        socketClient.initialize(object : SocketClient.Listener {
+//                            override fun onConnectionStateChanged(state: SocketState) {
+//                                if (state == SocketState.Connected) {
+//
+//                                    CoroutineScope(Dispatchers.IO).launch {
+//                                        val result = try {
+//                                            userApi.getCameraConfig()
+//                                        } catch (e: Exception) {
+//                                            null
+//                                        }
+//
+//                                        Log.d(tag, "onConnectionStateChanged: $result")
+//                                        result?.let { cameraInfoModel ->
+//                                            Log.d(tag, "onConnectionStateChanged: 1")
+//                                            mySharedPreference.setCameraModel(cameraInfoModel)
+//                                            withContext(Dispatchers.Main) {
+//                                                rtmpClient?.start(
+//                                                    cameraInfoModel, response.streamKey
+//                                                ) {
+////                                                if (!MainService.isUiActive && !it) {
+////                                                    openAppReopenCamera(cameraInfoModel, key)
+////                                                }
+//                                                    Log.d(tag, "2onNewMessageReceived: camera is opened $it")
 //                                                }
-                                                    Log.d(tag, "2onNewMessageReceived: camera is opened $it")
-                                                }
-                                            }
-
-                                        } ?: kotlin.run {
-                                            Log.d(tag, "onConnectionStateChanged: 2")
-                                            delay(1000)
-                                            withContext(Dispatchers.Main) {
-                                                rtmpClient?.start(
-                                                    mySharedPreference.getCameraModel(), response.streamKey
-                                                ) {
-//                                                if (!MainService.isUiActive && !it) {
-//                                                    openAppReopenCamera(
-//                                                        mySharedPreference.getCameraModel(),
-//                                                        key
-//                                                    )
-//                                                }
-                                                    Log.d(tag, "3onNewMessageReceived: camera is opened $it")
-                                                }
-                                            }
-
-                                        }
-                                    }
-                                }
-                                Log.d(tag, "onConnectionStateChanged: $state")
-                            }
-
-                            override fun onNewMessageReceived(message: String) {
-                                CoroutineScope(Dispatchers.IO).launch {
-                                    val result = try {
-                                        userApi.getCameraConfig()
-                                    } catch (e: Exception) {
-                                        null
-                                    }
-
-                                    result?.let { cameraInfo ->
-                                        withContext(Dispatchers.Main) {
-                                            rtmpClient?.start(
-                                                cameraInfo, response.streamKey
-                                            ) {
-//                                            if (!MainService.isUiActive && !it) {
-//                                                openAppReopenCamera(cameraInfo, key)
 //                                            }
-                                                Log.d(tag, "4onNewMessageReceived: camera is opened $it")
-                                            }
-                                        }
-                                    }
-                                }
-
-                                Log.d(
-                                    tag,
-                                    "5onNewMessageReceived: isUiActive = ${MainService.isUiActive} , message: $message"
-                                )
-                            }
-
-                        })
-                    }
+//
+//                                        } ?: kotlin.run {
+//                                            Log.d(tag, "onConnectionStateChanged: 2")
+//                                            delay(1000)
+//                                            withContext(Dispatchers.Main) {
+//                                                rtmpClient?.start(
+//                                                    mySharedPreference.getCameraModel(), response.streamKey
+//                                                ) {
+////                                                if (!MainService.isUiActive && !it) {
+////                                                    openAppReopenCamera(
+////                                                        mySharedPreference.getCameraModel(),
+////                                                        key
+////                                                    )
+////                                                }
+//                                                    Log.d(tag, "3onNewMessageReceived: camera is opened $it")
+//                                                }
+//                                            }
+//
+//                                        }
+//                                    }
+//                                }
+//                                Log.d(tag, "onConnectionStateChanged: $state")
+//                            }
+//
+//                            override fun onNewMessageReceived(message: String) {
+//                                CoroutineScope(Dispatchers.IO).launch {
+//                                    val result = try {
+//                                        userApi.getCameraConfig()
+//                                    } catch (e: Exception) {
+//                                        null
+//                                    }
+//
+//                                    result?.let { cameraInfo ->
+//                                        withContext(Dispatchers.Main) {
+//                                            rtmpClient?.start(
+//                                                cameraInfo, response.streamKey
+//                                            ) {
+////                                            if (!MainService.isUiActive && !it) {
+////                                                openAppReopenCamera(cameraInfo, key)
+////                                            }
+//                                                Log.d(tag, "4onNewMessageReceived: camera is opened $it")
+//                                            }
+//                                        }
+//                                    }
+//                                }
+//
+//                                Log.d(
+//                                    tag,
+//                                    "5onNewMessageReceived: isUiActive = ${MainService.isUiActive} , message: $message"
+//                                )
+//                            }
+//
+//                        })
+//                    }
                 }
             }, {
                 this@MainActivity.startActivity(

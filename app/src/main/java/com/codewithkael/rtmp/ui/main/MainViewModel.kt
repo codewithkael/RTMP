@@ -38,7 +38,7 @@ class MainViewModel @Inject constructor(
                         }
                         done(false,null)
                     } else {
-//                        serviceRepository.startService(keyResponse.body()!!)
+                        serviceRepository.startService(keyResponse.body()!!)
                         done(true,keyResponse.body()!!)
                     }
                 } ?: kotlin.run {
