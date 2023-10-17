@@ -60,35 +60,35 @@ class LoginActivity : AppCompatActivity() {
                         android.Manifest.permission.CAMERA
                     ).request { allGranted, _, _ ->
                         if (allGranted) {
-//                            if (!Settings.canDrawOverlays(this@LoginActivity)) {
-//                                val intent = Intent(
-//                                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-//                                    Uri.parse("package:$packageName")
-//                                )
-//                                startActivity(intent)
-//                            } else {
-//                            }
-                            CoroutineScope(Dispatchers.IO).launch {
-                                try {
-                                    val result = userApi.login(
-                                        LoginBody(
-                                            username = usernameET.text.toString(),
-                                            password = passwordET.text.toString()
+                            if (!Settings.canDrawOverlays(this@LoginActivity)) {
+                                val intent = Intent(
+                                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                    Uri.parse("package:$packageName")
+                                )
+                                startActivity(intent)
+                            } else {
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    try {
+                                        val result = userApi.login(
+                                            LoginBody(
+                                                username = usernameET.text.toString(),
+                                                password = passwordET.text.toString()
+                                            )
                                         )
-                                    )
-                                    sharedPreference.setToken(result.token)
-                                    Log.d("TAG", "init: ${result.token}")
-                                    withContext(Dispatchers.Main) {
-                                        this@LoginActivity.startActivity(
-                                            Intent(this@LoginActivity, MainActivity::class.java)
-                                        )
-                                    }
-                                } catch (e: Exception) {
-                                    withContext(Dispatchers.Main) {
-                                        Toast.makeText(
-                                            this@LoginActivity,
-                                            "${e.message}", Toast.LENGTH_SHORT
-                                        ).show()
+                                        sharedPreference.setToken(result.token)
+                                        Log.d("TAG", "init: ${result.token}")
+                                        withContext(Dispatchers.Main) {
+                                            this@LoginActivity.startActivity(
+                                                Intent(this@LoginActivity, MainActivity::class.java)
+                                            )
+                                        }
+                                    } catch (e: Exception) {
+                                        withContext(Dispatchers.Main) {
+                                            Toast.makeText(
+                                                this@LoginActivity,
+                                                "${e.message}", Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
                                     }
                                 }
                             }

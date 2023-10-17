@@ -13,19 +13,6 @@ import com.codewithkael.rtmp.service.MainServiceRepository
 import com.codewithkael.rtmp.ui.login.LoginActivity
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import android.provider.Settings
-import android.util.Log
-import com.codewithkael.rtmp.remote.UserApi
-import com.codewithkael.rtmp.remote.socket.SocketClient
-import com.codewithkael.rtmp.remote.socket.SocketState
-import com.codewithkael.rtmp.utils.Constants
-import com.codewithkael.rtmp.utils.RtmpClient
-import com.haishinkit.view.HkSurfaceView
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity(), MainService.Listener {
@@ -145,17 +132,6 @@ class MainActivity : AppCompatActivity(), MainService.Listener {
     }
 
 
-    @Inject
-    lateinit var mySharedPreference: MySharedPreference
-
-    @Inject
-    lateinit var socketClient: SocketClient
-
-    private val userApi: UserApi by lazy {
-        Constants.getRetrofitObject(mySharedPreference.getToken() ?: "").create(UserApi::class.java)
-    }
-    private var rtmpClient: RtmpClient? = null
-
     private val tag = "MainActivity"
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -173,9 +149,6 @@ class MainActivity : AppCompatActivity(), MainService.Listener {
     override fun onDestroy() {
         MainService.isUiActive = false
         MainService.listener = null
-        socketClient.unregisterClients()
-        socketClient.closeSocket()
-        rtmpClient?.stop()
         super.onDestroy()
     }
 

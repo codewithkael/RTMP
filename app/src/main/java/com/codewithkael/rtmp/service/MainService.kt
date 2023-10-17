@@ -3,9 +3,13 @@ package com.codewithkael.rtmp.service
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
 import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+import android.graphics.PixelFormat
 import android.util.Log
+import android.view.Gravity
+import android.view.WindowManager
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
 import com.codewithkael.rtmp.R
@@ -29,7 +33,7 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainService : LifecycleService() {
 
-    private val tag = "MainService"
+    private val tag = "MainService-MainService2"
 
     companion object {
         var isServiceRunning = false
@@ -80,18 +84,18 @@ class MainService : LifecycleService() {
         ).setSmallIcon(R.mipmap.ic_launcher)
             .addAction(R.drawable.ic_end_call, "Exit", pendingIntent)
 
-//        surface = HkSurfaceView(this)
-//        val params = WindowManager.LayoutParams(
-//            1,
-//            1,
-//            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, // This type is suitable for overlays
-//            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-//            PixelFormat.TRANSLUCENT
-//        )
-//        params.gravity = Gravity.TOP or Gravity.START
-//        val windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
-//        windowManager.addView(surface, params)
-//        surface?.keepScreenOn = true
+        surface = HkSurfaceView(this)
+        val params = WindowManager.LayoutParams(
+            1,
+            1,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, // This type is suitable for overlays
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+            PixelFormat.TRANSLUCENT
+        )
+        params.gravity = Gravity.TOP or Gravity.START
+        val windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        windowManager.addView(surface, params)
+        surface?.keepScreenOn = true
 //        surface?.setRotation(100f)
     }
 
@@ -150,11 +154,63 @@ class MainService : LifecycleService() {
             isServiceRunning = true
             startServiceWithNotification()
             key = incomingIntent.getStringExtra("key")
-            rtmpClient = RtmpClient(this@MainService, HkSurfaceView(this), userApi)
-            socketClient.initialize(object : SocketClient.Listener {
-                override fun onConnectionStateChanged(state: SocketState) {
-                    if (state == SocketState.Connected) {
 
+
+            surface?.let { srf ->
+                rtmpClient = RtmpClient(this@MainService, srf, userApi)
+                socketClient.initialize(object : SocketClient.Listener {
+                    override fun onConnectionStateChanged(state: SocketState) {
+                        Log.d(tag, "onNewMessageReceivedConnected: $state")
+
+                        if (state == SocketState.Connected) {
+
+                            CoroutineScope(Dispatchers.IO).launch {
+                                val result = try {
+                                    userApi.getCameraConfig()
+                                } catch (e: Exception) {
+                                    null
+                                }
+
+                                Log.d(tag, "onConnectionStateChanged: $result")
+                                result?.let { cameraInfoModel ->
+                                    Log.d(tag, "onConnectionStateChanged: 1")
+                                    mySharedPreference.setCameraModel(cameraInfoModel)
+                                    withContext(Dispatchers.Main) {
+                                        rtmpClient?.start(
+                                            cameraInfoModel, key
+                                        ) {
+                                            if (!isUiActive && !it) {
+                                                openAppReopenCamera(cameraInfoModel, key)
+                                            }
+                                            Log.d(tag, "2onNewMessageReceived: camera is opened $it")
+                                        }
+                                    }
+
+                                } ?: kotlin.run {
+                                    Log.d(tag, "onConnectionStateChanged: 2")
+                                    delay(1000)
+                                    withContext(Dispatchers.Main) {
+                                        rtmpClient?.start(
+                                            mySharedPreference.getCameraModel(), key
+                                        ) {
+                                            if (!isUiActive && !it) {
+                                                openAppReopenCamera(
+                                                    mySharedPreference.getCameraModel(),
+                                                    key
+                                                )
+                                            }
+                                            Log.d(tag, "3onNewMessageReceived: camera is opened $it")
+                                        }
+                                    }
+
+                                }
+                            }
+                        }
+                        Log.d(tag, "onConnectionStateChanged: $state")
+                    }
+
+                    override fun onNewMessageReceived(message: String) {
+                        Log.d(tag, "onNewMessageReceived: $message")
                         CoroutineScope(Dispatchers.IO).launch {
                             val result = try {
                                 userApi.getCameraConfig()
@@ -162,79 +218,30 @@ class MainService : LifecycleService() {
                                 null
                             }
 
-                            Log.d(tag, "onConnectionStateChanged: $result")
-                            result?.let { cameraInfoModel ->
-                                Log.d(tag, "onConnectionStateChanged: 1")
-                                mySharedPreference.setCameraModel(cameraInfoModel)
+                            result?.let { cameraInfo ->
                                 withContext(Dispatchers.Main) {
                                     rtmpClient?.start(
-                                        cameraInfoModel, key
+                                        cameraInfo, key
                                     ) {
                                         if (!isUiActive && !it) {
-                                            openAppReopenCamera(cameraInfoModel, key)
+                                            openAppReopenCamera(cameraInfo, key)
                                         }
-                                        Log.d(tag, "2onNewMessageReceived: camera is opened $it")
+                                        Log.d(tag, "4onNewMessageReceived: camera is opened $it")
                                     }
-                                }
-
-                            } ?: kotlin.run {
-                                Log.d(tag, "onConnectionStateChanged: 2")
-                                delay(1000)
-                                withContext(Dispatchers.Main) {
-                                    rtmpClient?.start(
-                                        mySharedPreference.getCameraModel(), key
-                                    ) {
-                                        if (!isUiActive && !it) {
-                                            openAppReopenCamera(
-                                                mySharedPreference.getCameraModel(),
-                                                key
-                                            )
-                                        }
-                                        Log.d(tag, "3onNewMessageReceived: camera is opened $it")
-                                    }
-                                }
-
-                            }
-                        }
-                    }
-                    Log.d(tag, "onConnectionStateChanged: $state")
-                }
-
-                override fun onNewMessageReceived(message: String) {
-                    CoroutineScope(Dispatchers.IO).launch {
-                        val result = try {
-                            userApi.getCameraConfig()
-                        } catch (e: Exception) {
-                            null
-                        }
-
-                        result?.let { cameraInfo ->
-                            withContext(Dispatchers.Main) {
-                                rtmpClient?.start(
-                                    cameraInfo, key
-                                ) {
-                                    if (!isUiActive && !it) {
-                                        openAppReopenCamera(cameraInfo, key)
-                                    }
-                                    Log.d(tag, "4onNewMessageReceived: camera is opened $it")
                                 }
                             }
                         }
+
+                        Log.d(
+                            tag,
+                            "5onNewMessageReceived: isUiActive = $isUiActive , message: $message"
+                        )
                     }
 
-                    Log.d(
-                        tag,
-                        "5onNewMessageReceived: isUiActive = $isUiActive , message: $message"
-                    )
-                }
-
-            })
-
-//            surface?.let { srf ->
-//
-//            } ?: kotlin.run {
-//                handleStopService()
-//            }
+                })
+            } ?: kotlin.run {
+                handleStopService()
+            }
         }
     }
 
