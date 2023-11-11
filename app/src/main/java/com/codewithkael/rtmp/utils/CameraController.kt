@@ -13,6 +13,7 @@ import android.hardware.camera2.CameraMetadata.CONTROL_AE_MODE_OFF
 import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.params.MeteringRectangle
 import android.hardware.camera2.params.RggbChannelVector
+import android.hardware.camera2.params.TonemapCurve
 import android.util.Log
 import android.util.Range
 import android.util.Size
@@ -22,7 +23,9 @@ import com.codewithkael.rtmp.utils.CameraInfoModel
 import com.codewithkael.rtmp.utils.ExposureMode
 import com.codewithkael.rtmp.utils.fromPercent
 import com.haishinkit.view.HkSurfaceView
+import java.lang.StrictMath.pow
 import kotlin.math.max
+import kotlin.math.min
 
 /**
  * A controller class for managing various camera functionalities and parameters.
@@ -568,6 +571,50 @@ class CameraController(
         )
         captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
     }
+
+    fun adjustGamma(gamma: Float) {
+        val MAX_GAMMA = 5.0f
+        val MIN_GAMMA = 0.1f
+        val adjustedGamma = max(MIN_GAMMA, min(gamma, MAX_GAMMA))
+
+        val size = 256
+        val curve = FloatArray(size * 2)
+        for (i in 0 until size) {
+            curve[i * 2] = i / 255.0f
+            curve[i * 2 + 1] = pow(curve[i * 2].toDouble(), (1.0f / adjustedGamma).toDouble()).toFloat()
+        }
+
+        val tonemapCurve = TonemapCurve(curve, curve, curve)
+        captureBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE)
+        captureBuilder.set(CaptureRequest.TONEMAP_CURVE, tonemapCurve)
+    }
+
+    fun adjustContrast( contrast: Float) {
+        val MAX_CONTRAST = 2.0f
+        val MIN_CONTRAST = 0.0f
+        val adjustedContrast = max(MIN_CONTRAST, min(contrast, MAX_CONTRAST))
+
+        val mid = 0.5f
+        val size = 256
+        val curve = FloatArray(size * 2)
+        for (i in 0 until size) {
+            val value = i / 255.0f
+            curve[i * 2] = value
+            if (value < mid) {
+                curve[i * 2 + 1] = (pow((value / mid).toDouble(), adjustedContrast.toDouble()) * mid).toFloat()
+            } else {
+                curve[i * 2 + 1] = (1 - pow(((1 - value) / mid).toDouble(),
+                    adjustedContrast.toDouble()
+                ) * mid).toFloat()
+            }
+        }
+
+        val tonemapCurve = TonemapCurve(curve, curve, curve)
+        captureBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE)
+        captureBuilder.set(CaptureRequest.TONEMAP_CURVE, tonemapCurve)
+    }
+
+
 
 
 }
