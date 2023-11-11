@@ -472,12 +472,9 @@ class CameraController(
             )
             Log.d(TAG, "setExposureCompensation: called $convertedVersion")
             captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
-            setAutoWhiteBalanceOn()
         } catch (e: Exception) {
             e.printStackTrace()
         }
-
-
     }
 
     fun mapNumber(
