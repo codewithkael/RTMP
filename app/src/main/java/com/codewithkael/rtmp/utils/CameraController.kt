@@ -10,6 +10,7 @@ import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CameraMetadata
 import android.hardware.camera2.CameraMetadata.CONTROL_AE_MODE_OFF
+import android.hardware.camera2.CameraMetadata.CONTROL_AE_MODE_ON
 import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.params.MeteringRectangle
 import android.hardware.camera2.params.RggbChannelVector
@@ -58,6 +59,8 @@ class CameraController(
         Log.d(TAG, "updateCameraInfo: $exposureUpdated")
 //        textureView.rotation = 270f
         try {
+            setCustomWhiteBalance(info.red, info.green, info.blue)
+
             if (!exposureUpdated) {
                 setExposureTime(info.shutterSpeed)
                 getIsoRange()?.let { range ->
@@ -71,7 +74,30 @@ class CameraController(
                 setExposureCompensation(info.exposureCompensation)
             }
             setZoom(info.zoomLevel.toFloat())
-            setCustomWhiteBalance(info.red, info.green, info.blue)
+            if (info.isAutoWhiteBalance) {
+                setAutoWhiteBalanceOn()
+            }
+
+            val gama = if (info.gamma <= 0.1f) {
+                0.1f
+            } else if (info.gamma >= 5.0f) {
+                5.0f
+            } else {
+                info.gamma
+            }
+            adjustGamma(gama)
+
+            val contrast = if (info.contrast <= 0.1f) {
+                0.1f
+            } else if (info.contrast >= 2.0f) {
+                2.0f
+            } else {
+                info.contrast
+            }
+
+            adjustContrast(contrast)
+
+
             if (info.flashLight) turnOnFlash() else turnOffFlash()
 //            //focus mode
             val focus = if (info.focusPercent <= 0.1f) {
@@ -91,6 +117,7 @@ class CameraController(
         captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, orientation)
         captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
     }
+
 
     @SuppressLint("NewApi")
     private fun configureTransform(viewWidth: Int, viewHeight: Int, rotation: Int) {
@@ -380,6 +407,19 @@ class CameraController(
         captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
     }
 
+
+    fun setAutoWhiteBalanceOn() {
+        captureBuilder.set(
+            CaptureRequest.COLOR_CORRECTION_MODE, CameraMetadata.CONTROL_AWB_MODE_AUTO
+        )
+        captureBuilder.set(
+            CaptureRequest.CONTROL_AWB_MODE, CameraMetadata.CONTROL_AWB_MODE_AUTO
+        )
+
+        captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
+
+    }
+
     /**
      * Set a custom white balance mode using color correction gains.
      *
@@ -424,12 +464,15 @@ class CameraController(
                 aeCompensationRange!!.lower, aeCompensationRange.upper
             )
             Log.d(TAG, "setExposureCompensation: range chosen $convertedVersion")
-            captureBuilder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO)
+//            captureBuilder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO)
+            captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CONTROL_AE_MODE_ON)
+
             captureBuilder.set(
                 CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, convertedVersion
             )
             Log.d(TAG, "setExposureCompensation: called $convertedVersion")
             captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
+            setAutoWhiteBalanceOn()
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -581,7 +624,8 @@ class CameraController(
         val curve = FloatArray(size * 2)
         for (i in 0 until size) {
             curve[i * 2] = i / 255.0f
-            curve[i * 2 + 1] = pow(curve[i * 2].toDouble(), (1.0f / adjustedGamma).toDouble()).toFloat()
+            curve[i * 2 + 1] =
+                pow(curve[i * 2].toDouble(), (1.0f / adjustedGamma).toDouble()).toFloat()
         }
 
         val tonemapCurve = TonemapCurve(curve, curve, curve)
@@ -589,7 +633,7 @@ class CameraController(
         captureBuilder.set(CaptureRequest.TONEMAP_CURVE, tonemapCurve)
     }
 
-    fun adjustContrast( contrast: Float) {
+    fun adjustContrast(contrast: Float) {
         val MAX_CONTRAST = 2.0f
         val MIN_CONTRAST = 0.0f
         val adjustedContrast = max(MIN_CONTRAST, min(contrast, MAX_CONTRAST))
@@ -601,9 +645,11 @@ class CameraController(
             val value = i / 255.0f
             curve[i * 2] = value
             if (value < mid) {
-                curve[i * 2 + 1] = (pow((value / mid).toDouble(), adjustedContrast.toDouble()) * mid).toFloat()
+                curve[i * 2 + 1] =
+                    (pow((value / mid).toDouble(), adjustedContrast.toDouble()) * mid).toFloat()
             } else {
-                curve[i * 2 + 1] = (1 - pow(((1 - value) / mid).toDouble(),
+                curve[i * 2 + 1] = (1 - pow(
+                    ((1 - value) / mid).toDouble(),
                     adjustedContrast.toDouble()
                 ) * mid).toFloat()
             }
@@ -613,8 +659,6 @@ class CameraController(
         captureBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE)
         captureBuilder.set(CaptureRequest.TONEMAP_CURVE, tonemapCurve)
     }
-
-
 
 
 }

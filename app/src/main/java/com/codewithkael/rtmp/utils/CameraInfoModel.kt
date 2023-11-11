@@ -37,7 +37,16 @@ data class CameraInfoModel(
     //0f to 1f
     val blue:Float = 0.5f,
     //0f to 1f
-    val green:Float = 0.5f
+    val green:Float = 0.5f,
+
+
+    val isAutoWhiteBalance : Boolean = false,
+
+    //0.0f to 2.0f
+    val contrast:Float = 1.0f,
+
+    //0.1f to 5.0f
+    val gamma:Float = 0.01f
 
 
     )

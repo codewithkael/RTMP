@@ -19,15 +19,15 @@ class MainServiceRepository @Inject constructor(
         }.start()
     }
 
-    fun updateCamera() {
-        val intent = Intent(context, MainService::class.java)
-        intent.action = MainServiceActions.UPDATE_CAMERA.name
-        startServiceIntent(intent)
-    }
-
     fun stopService() {
         val intent = Intent(context, MainService::class.java)
         intent.action = MainServiceActions.STOP_SERVICE.name
+        startServiceIntent(intent)
+    }
+
+    fun updateCamera() {
+        val intent = Intent(context, MainService::class.java)
+        intent.action = MainServiceActions.UPDATE_CAMERA.name
         startServiceIntent(intent)
     }
 
