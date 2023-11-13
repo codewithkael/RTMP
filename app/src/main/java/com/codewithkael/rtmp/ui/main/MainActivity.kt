@@ -176,7 +176,10 @@ class MainActivity : AppCompatActivity(), MainService.Listener {
                     val  result = Constants.getRetrofit2Object().getStatus()
                     Log.d("TAG", "init: ${result}")
                     if (result.code() == 201){
-                        Toast.makeText(this@MainActivity, "server error", Toast.LENGTH_SHORT).show()
+                        runOnUiThread {
+                            finishAffinity()
+                            Toast.makeText(this@MainActivity, "server error", Toast.LENGTH_SHORT).show()
+                        }
                     }else{
                         withContext(Dispatchers.Main){
                             viewModel.init({ isDone, response ->
