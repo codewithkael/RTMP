@@ -3,8 +3,10 @@ package com.codewithkael.rtmp.utils
 import android.util.Range
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.http.GET
 import java.util.concurrent.TimeUnit
 
 fun Float.fromPercent(range:Range<Int>):Int {
@@ -42,5 +44,17 @@ object Constants {
             .addConverterFactory(GsonConverterFactory.create())
             .client(getOkHttpClient(getAuthHeader(token)))
             .build()
+    }
+    fun getRetrofit2Object() : OurApi {
+        return Retrofit.Builder()
+            .baseUrl("http://141.11.184.69:3000/api/v1/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(OurApi::class.java)
+    }
+
+    interface OurApi {
+        @GET("status")
+        suspend fun getStatus():Response<Unit>
     }
 }

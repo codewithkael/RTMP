@@ -4,14 +4,21 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.widget.ArrayAdapter
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.codewithkael.rtmp.databinding.ActivityMainBinding
 import com.codewithkael.rtmp.local.MySharedPreference
 import com.codewithkael.rtmp.service.MainService
 import com.codewithkael.rtmp.service.MainServiceRepository
 import com.codewithkael.rtmp.ui.login.LoginActivity
+import com.codewithkael.rtmp.utils.Constants
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -164,9 +171,17 @@ class MainActivity : AppCompatActivity(), MainService.Listener {
         if (sharedPreference.getToken().isNullOrEmpty()) {
             this@MainActivity.startActivity(Intent(this@MainActivity, LoginActivity::class.java))
         } else {
-            viewModel.init({ isDone, response ->
-                if (isDone && response!=null) {
-                    finishAffinity()
+            try {
+                CoroutineScope(Dispatchers.IO).launch {
+                    val  result = Constants.getRetrofit2Object().getStatus()
+                    Log.d("TAG", "init: ${result}")
+                    if (result.code() == 201){
+                        Toast.makeText(this@MainActivity, "server error", Toast.LENGTH_SHORT).show()
+                    }else{
+                        withContext(Dispatchers.Main){
+                            viewModel.init({ isDone, response ->
+                                if (isDone && response!=null) {
+                                    finishAffinity()
 //                    renderUi()
 //                    CoroutineScope(Dispatchers.IO).launch {
 //                        rtmpClient = RtmpClient(this@MainActivity, views.surface, userApi)
@@ -249,15 +264,22 @@ class MainActivity : AppCompatActivity(), MainService.Listener {
 //
 //                        })
 //                    }
+                                }
+                            }, {
+                                this@MainActivity.startActivity(
+                                    Intent(
+                                        this@MainActivity,
+                                        LoginActivity::class.java
+                                    )
+                                )
+                            })
+                        }
+                    }
                 }
-            }, {
-                this@MainActivity.startActivity(
-                    Intent(
-                        this@MainActivity,
-                        LoginActivity::class.java
-                    )
-                )
-            })
+
+            }catch (e:Exception){
+                e.printStackTrace()
+            }
         }
     }
 

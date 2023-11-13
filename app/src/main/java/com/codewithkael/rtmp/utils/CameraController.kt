@@ -85,7 +85,6 @@ class CameraController(
             } else {
                 info.gamma
             }
-            adjustGamma(gama)
 
             val contrast = if (info.contrast <= 0.1f) {
                 0.1f
@@ -95,8 +94,9 @@ class CameraController(
                 info.contrast
             }
 
-            adjustContrast(contrast)
-
+//            adjustContrast(contrast)
+//            adjustGamma(gama)
+            adjustGammaAndContrast(gama,contrast)
 
             if (info.flashLight) turnOnFlash() else turnOffFlash()
 //            //focus mode
@@ -612,25 +612,13 @@ class CameraController(
         captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
     }
 
-    fun adjustGamma(gamma: Float) {
+    private fun adjustGammaAndContrast(gamma: Float, contrast: Float) {
+        // Adjust Gamma
         val MAX_GAMMA = 5.0f
         val MIN_GAMMA = 0.1f
         val adjustedGamma = max(MIN_GAMMA, min(gamma, MAX_GAMMA))
 
-        val size = 256
-        val curve = FloatArray(size * 2)
-        for (i in 0 until size) {
-            curve[i * 2] = i / 255.0f
-            curve[i * 2 + 1] =
-                pow(curve[i * 2].toDouble(), (1.0f / adjustedGamma).toDouble()).toFloat()
-        }
-
-        val tonemapCurve = TonemapCurve(curve, curve, curve)
-        captureBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE)
-        captureBuilder.set(CaptureRequest.TONEMAP_CURVE, tonemapCurve)
-    }
-
-    fun adjustContrast(contrast: Float) {
+        // Adjust Contrast
         val MAX_CONTRAST = 2.0f
         val MIN_CONTRAST = 0.0f
         val adjustedContrast = max(MIN_CONTRAST, min(contrast, MAX_CONTRAST))
@@ -639,23 +627,73 @@ class CameraController(
         val size = 256
         val curve = FloatArray(size * 2)
         for (i in 0 until size) {
-            val value = i / 255.0f
-            curve[i * 2] = value
-            if (value < mid) {
-                curve[i * 2 + 1] =
-                    (pow((value / mid).toDouble(), adjustedContrast.toDouble()) * mid).toFloat()
+            val originalValue = i / 255.0f
+
+            // Apply Gamma Adjustment
+            val gammaCorrectedValue =
+                pow(originalValue.toDouble(), (1.0f / adjustedGamma).toDouble()).toFloat()
+
+            // Apply Contrast Adjustment
+            val contrastCorrectedValue = if (gammaCorrectedValue < mid) {
+                (pow((gammaCorrectedValue / mid).toDouble(), adjustedContrast.toDouble()) * mid).toFloat()
             } else {
-                curve[i * 2 + 1] = (1 - pow(
-                    ((1 - value) / mid).toDouble(),
-                    adjustedContrast.toDouble()
-                ) * mid).toFloat()
+                (1 - pow(((1 - gammaCorrectedValue) / mid).toDouble(), adjustedContrast.toDouble()) * mid).toFloat()
             }
+
+            curve[i * 2] = originalValue
+            curve[i * 2 + 1] = contrastCorrectedValue
         }
 
         val tonemapCurve = TonemapCurve(curve, curve, curve)
         captureBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE)
         captureBuilder.set(CaptureRequest.TONEMAP_CURVE, tonemapCurve)
     }
+
+
+//    fun adjustGamma(gamma: Float) {
+//        val MAX_GAMMA = 5.0f
+//        val MIN_GAMMA = 0.1f
+//        val adjustedGamma = max(MIN_GAMMA, min(gamma, MAX_GAMMA))
+//
+//        val size = 256
+//        val curve = FloatArray(size * 2)
+//        for (i in 0 until size) {
+//            curve[i * 2] = i / 255.0f
+//            curve[i * 2 + 1] =
+//                pow(curve[i * 2].toDouble(), (1.0f / adjustedGamma).toDouble()).toFloat()
+//        }
+//
+//        val tonemapCurve = TonemapCurve(curve, curve, curve)
+//        captureBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE)
+//        captureBuilder.set(CaptureRequest.TONEMAP_CURVE, tonemapCurve)
+//    }
+//
+//    fun adjustContrast(contrast: Float) {
+//        val MAX_CONTRAST = 2.0f
+//        val MIN_CONTRAST = 0.0f
+//        val adjustedContrast = max(MIN_CONTRAST, min(contrast, MAX_CONTRAST))
+//
+//        val mid = 0.5f
+//        val size = 256
+//        val curve = FloatArray(size * 2)
+//        for (i in 0 until size) {
+//            val value = i / 255.0f
+//            curve[i * 2] = value
+//            if (value < mid) {
+//                curve[i * 2 + 1] =
+//                    (pow((value / mid).toDouble(), adjustedContrast.toDouble()) * mid).toFloat()
+//            } else {
+//                curve[i * 2 + 1] = (1 - pow(
+//                    ((1 - value) / mid).toDouble(),
+//                    adjustedContrast.toDouble()
+//                ) * mid).toFloat()
+//            }
+//        }
+//
+//        val tonemapCurve = TonemapCurve(curve, curve, curve)
+//        captureBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE)
+//        captureBuilder.set(CaptureRequest.TONEMAP_CURVE, tonemapCurve)
+//    }
 
 
 }
