@@ -96,8 +96,8 @@ class CameraController(
 
 //            adjustContrast(contrast)
 //            adjustGamma(gama)
-            adjustGammaAndContrast(gama,contrast)
-
+//            adjustGammaAndContrast(gama,contrast)
+            adjustGammaAndContrast2(gama,contrast)
             if (info.flashLight) turnOnFlash() else turnOffFlash()
 //            //focus mode
             val focus = if (info.focusPercent <= 0.1f) {
@@ -648,6 +648,66 @@ class CameraController(
         captureBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE)
         captureBuilder.set(CaptureRequest.TONEMAP_CURVE, tonemapCurve)
     }
+
+    private fun adjustGammaAndContrast2(gamma: Float, contrast: Float) {
+        val cameraCharacteristics = getCameraCharacteristics()
+        val (gammaRange, contrastRange) = setGammaAndContrastRanges(cameraCharacteristics)
+
+        // Adjust Gamma within the range
+        val adjustedGamma = max(gammaRange.start, min(gamma, gammaRange.endInclusive))
+
+        // Adjust Contrast within the range
+        val adjustedContrast = max(contrastRange.start, min(contrast, contrastRange.endInclusive))
+
+        val mid = 0.5f
+        val size = 256
+        val curve = FloatArray(size * 2)
+        for (i in 0 until size) {
+            val originalValue = i / 255.0f
+
+            // Apply Gamma Adjustment
+            val gammaCorrectedValue = pow(originalValue.toDouble(), (1.0f / adjustedGamma).toDouble()).toFloat()
+
+            // Apply Contrast Adjustment
+            val contrastCorrectedValue = if (gammaCorrectedValue < mid) {
+                (pow((gammaCorrectedValue / mid).toDouble(), adjustedContrast.toDouble()) * mid).toFloat()
+            } else {
+                (1 - pow(((1 - gammaCorrectedValue) / mid).toDouble(), adjustedContrast.toDouble()) * mid).toFloat()
+            }
+
+            curve[i * 2] = originalValue
+            curve[i * 2 + 1] = contrastCorrectedValue
+        }
+
+        val tonemapCurve = TonemapCurve(curve, curve, curve)
+        captureBuilder.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE)
+        captureBuilder.set(CaptureRequest.TONEMAP_CURVE, tonemapCurve)
+    }
+
+    fun getCameraCapabilities(context: Context, cameraId: String): CameraCharacteristics {
+        val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
+        return cameraManager.getCameraCharacteristics(cameraId)
+    }
+
+    fun setGammaAndContrastRanges(cameraCharacteristics: CameraCharacteristics): Pair<ClosedFloatingPointRange<Float>, ClosedFloatingPointRange<Float>> {
+        val maxCurvePoints = cameraCharacteristics.get(CameraCharacteristics.TONEMAP_MAX_CURVE_POINTS)
+        val SOME_THRESHOLD = 10 // Example threshold, adjust based on your requirements
+
+        val gammaRange = if (maxCurvePoints != null && maxCurvePoints >= SOME_THRESHOLD) {
+            0.1f..5.0f
+        } else {
+            0.5f..2.0f
+        }
+
+        val contrastRange = if (maxCurvePoints != null && maxCurvePoints >= SOME_THRESHOLD) {
+            0.0f..2.0f
+        } else {
+            0.2f..1.5f
+        }
+
+        return Pair(gammaRange, contrastRange)
+    }
+
 
 
 //    fun adjustGamma(gamma: Float) {
