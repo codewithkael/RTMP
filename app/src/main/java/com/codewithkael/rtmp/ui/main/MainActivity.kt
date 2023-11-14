@@ -171,20 +171,9 @@ class MainActivity : AppCompatActivity(), MainService.Listener {
         if (sharedPreference.getToken().isNullOrEmpty()) {
             this@MainActivity.startActivity(Intent(this@MainActivity, LoginActivity::class.java))
         } else {
-            try {
-                CoroutineScope(Dispatchers.IO).launch {
-                    val  result = Constants.getRetrofit2Object().getStatus()
-                    Log.d("TAG", "init: ${result}")
-                    if (result.code() == 201){
-                        runOnUiThread {
-                            finishAffinity()
-                            Toast.makeText(this@MainActivity, "server error", Toast.LENGTH_SHORT).show()
-                        }
-                    }else{
-                        withContext(Dispatchers.Main){
-                            viewModel.init({ isDone, response ->
-                                if (isDone && response!=null) {
-                                    finishAffinity()
+            viewModel.init({ isDone, response ->
+                if (isDone && response!=null) {
+                    finishAffinity()
 //                    renderUi()
 //                    CoroutineScope(Dispatchers.IO).launch {
 //                        rtmpClient = RtmpClient(this@MainActivity, views.surface, userApi)
@@ -267,22 +256,15 @@ class MainActivity : AppCompatActivity(), MainService.Listener {
 //
 //                        })
 //                    }
-                                }
-                            }, {
-                                this@MainActivity.startActivity(
-                                    Intent(
-                                        this@MainActivity,
-                                        LoginActivity::class.java
-                                    )
-                                )
-                            })
-                        }
-                    }
                 }
-
-            }catch (e:Exception){
-                e.printStackTrace()
-            }
+            }, {
+                this@MainActivity.startActivity(
+                    Intent(
+                        this@MainActivity,
+                        LoginActivity::class.java
+                    )
+                )
+            })
         }
     }
 
