@@ -167,7 +167,9 @@ class MainActivity : AppCompatActivity(), MainService.Listener {
             saveSettings()
         }
 
-
+        if (MainService.isServiceRunning){
+            finishAffinity()
+        }
         if (sharedPreference.getToken().isNullOrEmpty()) {
             this@MainActivity.startActivity(Intent(this@MainActivity, LoginActivity::class.java))
         } else {
