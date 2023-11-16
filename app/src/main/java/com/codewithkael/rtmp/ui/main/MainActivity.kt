@@ -1,10 +1,7 @@
 package com.codewithkael.rtmp.ui.main
 
-import android.annotation.SuppressLint
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -18,7 +15,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -167,15 +163,23 @@ class MainActivity : AppCompatActivity(), MainService.Listener {
             saveSettings()
         }
 
-        if (MainService.isServiceRunning){
+        if (MainService.isServiceRunning) {
             finishAffinity()
         }
         if (sharedPreference.getToken().isNullOrEmpty()) {
             this@MainActivity.startActivity(Intent(this@MainActivity, LoginActivity::class.java))
         } else {
-            viewModel.init({ isDone, response ->
-                if (isDone && response!=null) {
-                    finishAffinity()
+            CoroutineScope(Dispatchers.IO).launch {
+                val result = Constants.getRetrofit2Object().getStatus()
+                if (result.code() == 201) {
+                    runOnUiThread {
+                        finishAffinity()
+                        Toast.makeText(this@MainActivity, "server error", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    viewModel.init({ isDone, response ->
+                        if (isDone && response != null) {
+                            finishAffinity()
 //                    renderUi()
 //                    CoroutineScope(Dispatchers.IO).launch {
 //                        rtmpClient = RtmpClient(this@MainActivity, views.surface, userApi)
@@ -258,15 +262,17 @@ class MainActivity : AppCompatActivity(), MainService.Listener {
 //
 //                        })
 //                    }
+                        }
+                    }, {
+                        this@MainActivity.startActivity(
+                            Intent(
+                                this@MainActivity,
+                                LoginActivity::class.java
+                            )
+                        )
+                    })
                 }
-            }, {
-                this@MainActivity.startActivity(
-                    Intent(
-                        this@MainActivity,
-                        LoginActivity::class.java
-                    )
-                )
-            })
+            }
         }
     }
 
