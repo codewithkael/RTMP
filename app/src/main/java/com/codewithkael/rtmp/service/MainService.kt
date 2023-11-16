@@ -33,6 +33,8 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainService : LifecycleService() {
 
+    @Inject lateinit var serviceRepository: MainServiceRepository
+
     private val tag = "MainService-MainService2"
 
     companion object {
@@ -56,6 +58,8 @@ class MainService : LifecycleService() {
     private val userApi: UserApi by lazy {
         Constants.getRetrofitObject(mySharedPreference.getToken() ?: "").create(UserApi::class.java)
     }
+
+    private var latestConfig:CameraInfoModel = CameraInfoModel()
 
 
     private lateinit var notificationManager: NotificationManager
@@ -97,6 +101,7 @@ class MainService : LifecycleService() {
         windowManager.addView(surface, params)
         surface?.keepScreenOn = true
 //        surface?.setRotation(100f)
+        latestConfig = mySharedPreference.getCameraModel()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -113,17 +118,6 @@ class MainService : LifecycleService() {
         return START_STICKY
     }
 
-    private fun handleUpdateCamera() {
-        startServiceWithNotification()
-        val info = mySharedPreference.getCameraModel()
-        rtmpClient?.start(info, key) {
-            if (!isUiActive && !it) {
-                openAppReopenCamera(info, key)
-                Log.d(tag, "1onNewMessageReceived: camera is opened $it")
-            }
-        }
-
-    }
 
     private fun openAppReopenCamera(info: CameraInfoModel, key: String?) {
         startActivity(Intent(this@MainService, MainActivity::class.java).apply {
@@ -173,6 +167,7 @@ class MainService : LifecycleService() {
 
                                 Log.d(tag, "onConnectionStateChanged: $result")
                                 result?.let { cameraInfoModel ->
+                                    latestConfig = cameraInfoModel
                                     Log.d(tag, "onConnectionStateChanged: 1")
                                     mySharedPreference.setCameraModel(cameraInfoModel)
                                     withContext(Dispatchers.Main) {
@@ -211,6 +206,10 @@ class MainService : LifecycleService() {
 
                     override fun onNewMessageReceived(message: String) {
                         Log.d(tag, "onNewMessageReceived: $message")
+                        if (message.contains("restart")){
+                                rtmpClient?.restartConnection()
+                            return
+                        }
                         CoroutineScope(Dispatchers.IO).launch {
                             val result = try {
                                 userApi.getCameraConfig()

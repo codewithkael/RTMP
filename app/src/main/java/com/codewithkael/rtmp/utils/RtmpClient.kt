@@ -323,6 +323,19 @@ class RtmpClient(
         }
     }
 
+    fun restartConnection(){
+        try {
+            CoroutineScope(Dispatchers.IO).launch {
+                stream.close()
+                connection.close()
+                delay(1000)
+                connection.connect(url)
+                stream.publish(url.split("live/")[1])
+            }
+        }catch (e:Exception){
+            e.printStackTrace()
+        }
+    }
     fun stop() {
         try {
             videoSource.close()
