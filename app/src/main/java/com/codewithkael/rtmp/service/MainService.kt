@@ -86,6 +86,7 @@ class MainService : LifecycleService() {
         notificationBuilder = NotificationCompat.Builder(
             this, "channel1"
         ).setSmallIcon(R.mipmap.ic_launcher)
+            .setOngoing(true)
             .addAction(R.drawable.ic_end_call, "Exit", pendingIntent)
 
         surface = HkSurfaceView(this)

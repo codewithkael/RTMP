@@ -3,10 +3,12 @@ package com.codewithkael.rtmp.ui.login
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import com.codewithkael.rtmp.databinding.ActivityLoginBinding
 import com.codewithkael.rtmp.local.MySharedPreference
@@ -33,6 +35,7 @@ class LoginActivity : AppCompatActivity() {
     lateinit var sharedPreference: MySharedPreference
 
 
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         views = ActivityLoginBinding.inflate(layoutInflater)
@@ -46,6 +49,7 @@ class LoginActivity : AppCompatActivity() {
         finishAffinity()
     }
 
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @SuppressLint("BatteryLife")
     private fun init() {
         val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
@@ -57,7 +61,8 @@ class LoginActivity : AppCompatActivity() {
                 if (usernameET.text.isNotEmpty() && passwordET.text.isNotEmpty()) {
 
                     PermissionX.init(this@LoginActivity).permissions(
-                        android.Manifest.permission.CAMERA
+                        android.Manifest.permission.CAMERA,
+                        android.Manifest.permission.POST_NOTIFICATIONS,
                     ).request { allGranted, _, _ ->
                         if (allGranted) {
                             if (!Settings.canDrawOverlays(this@LoginActivity)) {
