@@ -19,6 +19,9 @@ class MainViewModel @Inject constructor(
         Constants.getRetrofitObject(sharedPreference.getToken() ?: "")
             .create(UserApi::class.java)
 
+    fun finish(){
+        serviceRepository.stopService()
+    }
     fun init(done: (Boolean, GetStreamKeyResponse?) -> Unit, signOut: () -> Unit) {
         if (MainService.isServiceRunning){
             done(true,null)
