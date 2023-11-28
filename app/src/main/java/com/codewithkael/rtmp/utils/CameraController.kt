@@ -56,10 +56,10 @@ class CameraController(
     }
 
     fun updateCameraInfo(info: CameraInfoModel, exposureUpdated: Boolean) {
-        Log.d(TAG, "updateCameraInfo: $exposureUpdated")
-//        textureView.rotation = 270f
+        val availableApertures = getCameraCharacteristics().get(CameraCharacteristics.LENS_INFO_AVAILABLE_APERTURES)
+        Log.d(TAG, "updateCameraInfo aaa : ${availableApertures?.toList()}")
         try {
-            setCustomWhiteBalance(info.red, info.green, info.blue)
+//            setCustomWhiteBalance(info.red, info.green, info.blue)
 
             if (!exposureUpdated) {
                 setExposureTime(info.shutterSpeed)
@@ -74,9 +74,7 @@ class CameraController(
                 setExposureCompensation(info.exposureCompensation)
             }
             setZoom(info.zoomLevel.toFloat())
-            if (info.isAutoWhiteBalance) {
-                setAutoWhiteBalanceOn()
-            }
+
 
             val gama = if (info.gamma <= 0.1f) {
                 0.1f
@@ -93,135 +91,71 @@ class CameraController(
             } else {
                 info.contrast
             }
-
-//            adjustContrast(contrast)
-//            adjustGamma(gama)
-//            adjustGammaAndContrast(gama,contrast)
             adjustGammaAndContrast2(gama,contrast)
-            if (info.flashLight) turnOnFlash() else turnOffFlash()
+//            if (info.flashLight) turnOnFlash() else turnOffFlash()
+
+            if (info.isAutoWhiteBalance) {
+                setAutoWhiteBalanceOn()
+            } else{
+                setCustomWhiteBalance(info.red, info.green, info.blue)
+            }
+
+            if (info.flashLight){
+                setupBlackAndWhiteMode()
+            }else{
+                setupBlackAndWhiteModeOff()
+            }
 //            //focus mode
             val focus = if (info.focusPercent <= 0.1f) {
                 0.1f
             } else {
                 info.focusPercent
             }
-            setCustomFocusPercent(focus * 100)
+            setCustomFocusPercent2(focus * 100)
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    private fun setOrientation(orientation: Int) {
-//        configureTransform(320,480,270)
-        captureBuilder.addTarget(textureView.holder.surface)
-        captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, orientation)
+    private fun setupBlackAndWhiteMode() {
+        captureBuilder.set(CaptureRequest.CONTROL_EFFECT_MODE, CaptureRequest.CONTROL_EFFECT_MODE_MONO)
+        captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
+    }
+    private fun setupBlackAndWhiteModeOff() {
+        captureBuilder.set(CaptureRequest.CONTROL_EFFECT_MODE, CaptureRequest.CONTROL_EFFECT_MODE_OFF)
         captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
     }
 
-
-    @SuppressLint("NewApi")
-    private fun configureTransform(viewWidth: Int, viewHeight: Int, rotation: Int) {
-
-        val characteristics = cameraManager.getCameraCharacteristics(cameraId)
-        val streamConfigurationMap =
-            characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
-        val previewSize =
-            streamConfigurationMap!!.getOutputSizes(SurfaceTexture::class.java)[0] // Choose an appropriate size
-
-        val matrix = Matrix()
-        val viewRect = RectF(0f, 0f, viewWidth.toFloat(), viewHeight.toFloat())
-        val bufferRect = RectF(0f, 0f, previewSize!!.height.toFloat(), previewSize.width.toFloat())
-        val centerX = viewRect.centerX()
-        val centerY = viewRect.centerY()
-
-        if (Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation) {
-            bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY())
-            matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL)
-            val scale = max(
-                viewHeight.toFloat() / previewSize.height, viewWidth.toFloat() / previewSize.width
-            )
-            matrix.postScale(scale, scale, centerX, centerY)
-            matrix.postRotate((90 * (rotation - 2)).toFloat(), centerX, centerY)
-        } else if (Surface.ROTATION_180 == rotation) {
-            matrix.postRotate(180f, centerX, centerY)
-        }
-
-        textureView.transformMatrixToGlobal(matrix)
-    }
-
-
-    fun setCameraOrientation(cameraId: String, cameraManager: CameraManager, degrees: Int) {
-        val characteristics = cameraManager.getCameraCharacteristics(cameraId)
-        val configMap = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
-
-        // Find the output size for the preview
-        val outputSizes = configMap?.getOutputSizes(HkSurfaceView::class.java) ?: emptyArray()
-        val previewSize = chooseOptimalSize(
-            outputSizes, // List of available preview sizes
-            1920, 1080 // Desired width and height
-        )
-
-        // Configure the texture view size based on orientation
-        val orientation = (degrees + getDeviceOrientation()) % 360
-//        if (orientation == 90 || orientation == 270) {
-//            // Swap width and height if in landscape
-//            textureView.setLayoutParams(ViewGroup.LayoutParams(context))
-//            textureView.setAspectRatio(previewSize.height, previewSize.width)
-//        } else {
-//            textureView.setAspectRatio(previewSize.width, previewSize.height)
-//        }
-
-        // Apply the rotation to the texture view
-        textureView.rotation = degrees.toFloat()
-
-        // Set the orientation in the capture request
+    private fun setAutoWhiteBalanceOn() {
         captureBuilder.set(
-            CaptureRequest.JPEG_ORIENTATION, getJpegOrientation(characteristics, orientation)
+            CaptureRequest.COLOR_CORRECTION_MODE, CameraMetadata.CONTROL_AWB_MODE_AUTO
         )
+        captureBuilder.set(
+            CaptureRequest.CONTROL_AWB_MODE, CameraMetadata.CONTROL_AWB_MODE_AUTO
+        )
+
+        captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
+
     }
 
-    // Function to choose an optimal size based on desired dimensions
-    private fun chooseOptimalSize(choices: Array<Size>, width: Int, height: Int): Size {
-        val minSize = choices.firstOrNull {
-            it.width >= width && it.height >= height
-        }
-        return minSize ?: choices.last()
-    }
+    private fun setCustomWhiteBalance(redGain: Float, greenGain: Float, blueGain: Float) {
 
-    // Function to get the device orientation (in degrees)
-    private fun getDeviceOrientation(): Int {
-        val displayRotation =
-            (textureView.context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay.rotation
-
-        return when (displayRotation) {
-            Surface.ROTATION_0 -> 0
-            Surface.ROTATION_90 -> 90
-            Surface.ROTATION_180 -> 180
-            Surface.ROTATION_270 -> 270
-            else -> 0
-        }
-    }
-
-    // Function to get the JPEG orientation based on device orientation
-    private fun getJpegOrientation(
-        characteristics: CameraCharacteristics, deviceOrientation: Int
-    ): Int {
-        if (deviceOrientation == android.view.OrientationEventListener.ORIENTATION_UNKNOWN) return 0
-        val sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION)
-
-        // Round device orientation to a multiple of 90
-        val roundedOrientation = (deviceOrientation + 45) / 90 * 90
-
-        // Reverse device orientation for front-facing cameras
-        val facingFront =
-            characteristics.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT
-        return if (facingFront) {
-            (sensorOrientation!! + roundedOrientation) % 360
-        } else {  // Back-facing
-            (sensorOrientation!! - roundedOrientation + 360) % 360
+        try {
+            captureBuilder.set(
+                CaptureRequest.COLOR_CORRECTION_MODE, CameraMetadata.CONTROL_AWB_MODE_OFF
+            )
+            captureBuilder.set(
+                CaptureRequest.CONTROL_AWB_MODE, CameraMetadata.CONTROL_AWB_MODE_OFF
+            )
+            val gains = RggbChannelVector(redGain, greenGain, greenGain, blueGain)
+            captureBuilder.set(CaptureRequest.COLOR_CORRECTION_GAINS, gains)
+            captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
+            Log.d(TAG, "setCustomWhiteBalance: called")
+        } catch (e: CameraAccessException) {
+            Log.d(TAG, "setCustomWhiteBalance: ${e.message}")
+            e.printStackTrace()
         }
     }
-
 
     /**
      * Set the zoom level of the camera.
@@ -396,55 +330,6 @@ class CameraController(
     }
 
 
-    /**
-     * Set the white balance mode of the camera.
-     *
-     * @param whiteBalanceMode The desired white balance mode.
-     */
-    // Function to set white balance mode
-    fun setWhiteBalanceMode(whiteBalanceMode: Int) {
-        captureBuilder.set(CaptureRequest.CONTROL_AWB_MODE, whiteBalanceMode)
-        captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
-    }
-
-
-    fun setAutoWhiteBalanceOn() {
-        captureBuilder.set(
-            CaptureRequest.COLOR_CORRECTION_MODE, CameraMetadata.CONTROL_AWB_MODE_AUTO
-        )
-        captureBuilder.set(
-            CaptureRequest.CONTROL_AWB_MODE, CameraMetadata.CONTROL_AWB_MODE_AUTO
-        )
-
-        captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
-
-    }
-
-    /**
-     * Set a custom white balance mode using color correction gains.
-     *
-     * @param redGain The gain for the red channel. 1-254
-     * @param greenGain The gain for the green channel. 1-254
-     * @param blueGain The gain for the blue channel. 1-254
-     */
-    private fun setCustomWhiteBalance(redGain: Float, greenGain: Float, blueGain: Float) {
-
-        try {
-            captureBuilder.set(
-                CaptureRequest.COLOR_CORRECTION_MODE, CameraMetadata.CONTROL_AWB_MODE_OFF
-            )
-            captureBuilder.set(
-                CaptureRequest.CONTROL_AWB_MODE, CameraMetadata.CONTROL_AWB_MODE_OFF
-            )
-            val gains = RggbChannelVector(redGain, greenGain, greenGain, blueGain)
-            captureBuilder.set(CaptureRequest.COLOR_CORRECTION_GAINS, gains)
-            captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
-            Log.d(TAG, "setCustomWhiteBalance: called")
-        } catch (e: CameraAccessException) {
-            Log.d(TAG, "setCustomWhiteBalance: ${e.message}")
-            e.printStackTrace()
-        }
-    }
 
     /**
      * Set the exposure compensation value of the camera.
@@ -564,6 +449,25 @@ class CameraController(
     }
 
 
+    private fun setCustomFocusPercent2(percent: Float) {
+        try {
+            val characteristics = getCameraCharacteristics()
+            val minFocusDistance = characteristics.get(CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE) ?: return
+
+            // Convert the input percent to a focus distance value
+            // 0% corresponds to infinity, and 100% to the minimum focus distance
+            val focusDistance = minFocusDistance * (1 - percent / 100)
+
+            // Set the manual focus distance
+            captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF)
+            captureBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, focusDistance)
+
+            captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     /**
      * Set metering regions for the camera.
      *
@@ -573,17 +477,6 @@ class CameraController(
     fun setMeteringRegions(regions: Array<MeteringRectangle>) {
         captureBuilder.set(CaptureRequest.CONTROL_AF_REGIONS, regions)
         captureBuilder.set(CaptureRequest.CONTROL_AE_REGIONS, regions)
-        captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
-    }
-
-    /**
-     * Set the color effect mode of the camera.
-     *
-     * @param colorEffectMode The desired color effect mode.
-     */
-    // Function to set color effect mode
-    fun setColorEffectMode(colorEffectMode: Int) {
-        captureBuilder.set(CaptureRequest.CONTROL_EFFECT_MODE, colorEffectMode)
         captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
     }
 
