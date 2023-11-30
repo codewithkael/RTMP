@@ -19,6 +19,7 @@ fun Float.fromPercent(range:Range<Int>):Int {
 }
 
 object Constants {
+    const val BASE_RTMP_URL = "rtmp://164.92.142.251/live/"
     fun getSocketUrl(token: String) :String{
         return "ws://164.92.142.251:3002?token=$token"
     }

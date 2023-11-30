@@ -41,6 +41,7 @@ class MainService : LifecycleService() {
         var isServiceRunning = false
         var isUiActive = true
         var listener: Listener? = null
+        var currentUrl = ""
     }
 
     private lateinit var notificationBuilder: NotificationCompat.Builder

@@ -10,6 +10,7 @@ import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CaptureRequest.Builder
 import android.util.Log
 import com.codewithkael.rtmp.remote.UserApi
+import com.codewithkael.rtmp.utils.Constants.BASE_RTMP_URL
 import com.haishinkit.event.Event
 import com.haishinkit.event.IEventListener
 import com.haishinkit.media.Camera2Source
@@ -76,8 +77,8 @@ class RtmpClient(
         Log.d(TAG, "kael start called publishing:$isPublishing camera:$isCameraOpen : $info ")
         if (currentCameraInfo == null) currentCameraInfo = info
         this@RtmpClient.key = key
-        url = "rtmp://164.92.142.251/live/$key"
-//        val url = "rtmp://192.168.126.131/live/$key"
+        url = "$BASE_RTMP_URL$key"
+        Log.d(TAG, "start: url hereeee = $url")
         handleStartOrUpdate(info, url)
         CoroutineScope(Dispatchers.IO).launch {
             delay(2000)

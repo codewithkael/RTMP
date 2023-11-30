@@ -1,5 +1,10 @@
 package com.codewithkael.rtmp.ui.main
 
+import android.R.attr.label
+import android.R.attr.text
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -12,12 +17,14 @@ import com.codewithkael.rtmp.service.MainService
 import com.codewithkael.rtmp.service.MainServiceRepository
 import com.codewithkael.rtmp.ui.login.LoginActivity
 import com.codewithkael.rtmp.utils.Constants
+import com.codewithkael.rtmp.utils.Constants.BASE_RTMP_URL
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity(), MainService.Listener {
@@ -164,9 +171,25 @@ class MainActivity : AppCompatActivity(), MainService.Listener {
         views.saveBtn.setOnClickListener {
             saveSettings()
         }
+        views.urlTv.text = MainService.currentUrl
+        views.urlTv.setOnClickListener {
+            val textToCopy = views.urlTv.text
 
+            // Get the ClipboardManager service
+            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+
+            // Create a ClipData object holding the text
+            val clip = ClipData.newPlainText("label", textToCopy)
+
+            // Set the ClipData to the clipboard
+            clipboard.setPrimaryClip(clip)
+
+            // Optionally show a message to the user
+            Toast.makeText(this, "Text copied to clipboard", Toast.LENGTH_SHORT).show()
+
+        }
         if (MainService.isServiceRunning) {
-            finishAffinity()
+//            finishAffinity()
         }
         if (sharedPreference.getToken().isNullOrEmpty()) {
             this@MainActivity.startActivity(Intent(this@MainActivity, LoginActivity::class.java))
@@ -174,7 +197,11 @@ class MainActivity : AppCompatActivity(), MainService.Listener {
             CoroutineScope(Dispatchers.IO).launch {
                 viewModel.init({ isDone, response ->
                     if (isDone && response != null) {
-                        finishAffinity()
+//                        finishAffinity()
+                        MainService.currentUrl = "$BASE_RTMP_URL${response.streamKey}"
+                        views.urlTv.setText(MainService.currentUrl)
+
+
 //                    renderUi()
 //                    CoroutineScope(Dispatchers.IO).launch {
 //                        rtmpClient = RtmpClient(this@MainActivity, views.surface, userApi)
