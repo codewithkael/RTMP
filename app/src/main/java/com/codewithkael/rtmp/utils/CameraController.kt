@@ -100,7 +100,7 @@ class CameraController(
             } else {
                 info.focusPercent
             }
-            turnOnFlash()
+//            turnOnFlash()
             if (info.flashLight) {
                 setAutoFocusForContinousOn()
             } else {
