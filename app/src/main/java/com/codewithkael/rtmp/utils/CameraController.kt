@@ -49,9 +49,9 @@ class CameraController(
     }
 
     fun updateCameraInfo(info: CameraInfoModel, exposureUpdated: Boolean) {
-        val availableApertures =
-            getCameraCharacteristics().get(CameraCharacteristics.LENS_INFO_AVAILABLE_APERTURES)
-        Log.d(TAG, "updateCameraInfo aaa : ${availableApertures?.toList()}")
+//        val availableApertures =
+//            getCameraCharacteristics().get(CameraCharacteristics.LENS_INFO_AVAILABLE_APERTURES)
+//        Log.d(TAG, "updateCameraInfo aaa : ${availableApertures?.toList()}")
         try {
 //            setCustomWhiteBalance(info.red, info.green, info.blue)
 
@@ -67,45 +67,45 @@ class CameraController(
             } else {
                 setExposureCompensation(info.exposureCompensation)
             }
-            setZoom(info.zoomLevel.toFloat())
 
 
-            val gama = if (info.gamma <= 0.1f) {
-                0.1f
-            } else if (info.gamma >= 5.0f) {
-                5.0f
-            } else {
-                info.gamma
-            }
-
-            val contrast = if (info.contrast <= 0.1f) {
-                0.1f
-            } else if (info.contrast >= 2.0f) {
-                2.0f
-            } else {
-                info.contrast
-            }
-            adjustGammaAndContrast2(gama, contrast)
-//            if (info.flashLight) turnOnFlash() else turnOffFlash()
-
-            if (info.isAutoWhiteBalance) {
-                setAutoWhiteBalanceOn()
-            } else {
-                setCustomWhiteBalance(info.red, info.green, info.blue)
-            }
-
-            //            //focus mode
-            val focus = if (info.focusPercent <= 0.1f) {
-                0.1f
-            } else {
-                info.focusPercent
-            }
-//            turnOnFlash()
-            if (info.flashLight) {
-                setAutoFocusForContinousOn()
-            } else {
-                setCustomFocusPercent2(focus * 100)
-            }
+//            setZoom(info.zoomLevel.toFloat())
+//            val gama = if (info.gamma <= 0.1f) {
+//                0.1f
+//            } else if (info.gamma >= 5.0f) {
+//                5.0f
+//            } else {
+//                info.gamma
+//            }
+//
+//            val contrast = if (info.contrast <= 0.1f) {
+//                0.1f
+//            } else if (info.contrast >= 2.0f) {
+//                2.0f
+//            } else {
+//                info.contrast
+//            }
+//            adjustGammaAndContrast2(gama, contrast)
+////            if (info.flashLight) turnOnFlash() else turnOffFlash()
+//
+//            if (info.isAutoWhiteBalance) {
+//                setAutoWhiteBalanceOn()
+//            } else {
+//                setCustomWhiteBalance(info.red, info.green, info.blue)
+//            }
+//
+//            //            //focus mode
+//            val focus = if (info.focusPercent <= 0.1f) {
+//                0.1f
+//            } else {
+//                info.focusPercent
+//            }
+////            turnOnFlash()
+//            if (info.flashLight) {
+//                setAutoFocusForContinousOn()
+//            } else {
+//                setCustomFocusPercent2(focus * 100)
+//            }
 
 
         } catch (e: Exception) {
