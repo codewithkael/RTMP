@@ -145,7 +145,7 @@ class RtmpClient(
             stream.videoSetting.width = info.width // The width  of video output.
             stream.videoSetting.height = info.height // The height  of video output.
             stream.videoSetting.bitRate = info.bitrate // The bitRate of video output.
-            stream.videoSetting.frameRate = if (info.fps < 15) 15 else info.fps
+            stream.videoSetting.frameRate = if (info.fps < 15) 15 else info.fps*2
             stream.videoSetting.IFrameInterval = 2
             connection.connect(url)
             stream.publish(url.split("live/")[1])
