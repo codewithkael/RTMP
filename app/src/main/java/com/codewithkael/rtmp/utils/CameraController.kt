@@ -53,7 +53,7 @@ class CameraController(
 //            getCameraCharacteristics().get(CameraCharacteristics.LENS_INFO_AVAILABLE_APERTURES)
 //        Log.d(TAG, "updateCameraInfo aaa : ${availableApertures?.toList()}")
         try {
-//            setCustomWhiteBalance(info.red, info.green, info.blue)
+            setCustomWhiteBalance(info.red, info.green, info.blue)
 
             if (!exposureUpdated) {
                 setExposureTime(info.shutterSpeed)
@@ -69,43 +69,42 @@ class CameraController(
             }
 
 
-//            setZoom(info.zoomLevel.toFloat())
-//            val gama = if (info.gamma <= 0.1f) {
-//                0.1f
-//            } else if (info.gamma >= 5.0f) {
-//                5.0f
-//            } else {
-//                info.gamma
-//            }
+            setZoom(info.zoomLevel.toFloat())
+            val gama = if (info.gamma <= 0.1f) {
+                0.1f
+            } else if (info.gamma >= 5.0f) {
+                5.0f
+            } else {
+                info.gamma
+            }
 //
-//            val contrast = if (info.contrast <= 0.1f) {
-//                0.1f
-//            } else if (info.contrast >= 2.0f) {
-//                2.0f
-//            } else {
-//                info.contrast
-//            }
-//            adjustGammaAndContrast2(gama, contrast)
+            val contrast = if (info.contrast <= 0.1f) {
+                0.1f
+            } else if (info.contrast >= 2.0f) {
+                2.0f
+            } else {
+                info.contrast
+            }
+            adjustGammaAndContrast2(gama, contrast)
 ////            if (info.flashLight) turnOnFlash() else turnOffFlash()
 //
-//            if (info.isAutoWhiteBalance) {
-//                setAutoWhiteBalanceOn()
-//            } else {
-//                setCustomWhiteBalance(info.red, info.green, info.blue)
-//            }
+            if (info.isAutoWhiteBalance) {
+                setAutoWhiteBalanceOn()
+            } else {
+                setCustomWhiteBalance(info.red, info.green, info.blue)
+            }
 //
-//            //            //focus mode
-//            val focus = if (info.focusPercent <= 0.1f) {
-//                0.1f
-//            } else {
-//                info.focusPercent
-//            }
-////            turnOnFlash()
-//            if (info.flashLight) {
-//                setAutoFocusForContinousOn()
-//            } else {
-//                setCustomFocusPercent2(focus * 100)
-//            }
+            //            //focus mode
+            val focus = if (info.focusPercent <= 0.1f) {
+                0.1f
+            } else {
+                info.focusPercent
+            }
+            if (info.flashLight) {
+                setAutoFocusForContinousOn()
+            } else {
+                setCustomFocusPercent2(focus * 100)
+            }
 
 
         } catch (e: Exception) {
@@ -116,8 +115,8 @@ class CameraController(
     private fun setAutoFocusForContinousOn() {
         captureBuilder.set(
             CaptureRequest.CONTROL_AF_MODE,
-//            CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE // Use CONTROL_AF_MODE_CONTINUOUS_VIDEO for video
-            CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO // Use CONTROL_AF_MODE_CONTINUOUS_VIDEO for video
+            CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE // Use CONTROL_AF_MODE_CONTINUOUS_VIDEO for video
+//            CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO // Use CONTROL_AF_MODE_CONTINUOUS_VIDEO for video
         )
         captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
     }
@@ -246,91 +245,36 @@ class CameraController(
     private fun setExposureTime(exposureTime: ExposureMode?) {
         val range = getExposureTimeRange()
 
-        val time = when (exposureTime) {
-
-            ExposureMode.EXPOSURE_1_4000 -> {
-
-                range?.lower // Equivalent to 1/4000 second
-            }
-
-            ExposureMode.EXPOSURE_1_2000 -> {
-                range?.lower?.times(2) // Equivalent to 1/2000 second
-            }
-
-            ExposureMode.EXPOSURE_1_1000 -> {
-                range?.lower?.times(4) // Equivalent to 1/1000 second
-            }
-
-            ExposureMode.EXPOSURE_1_500 -> {
-                range?.lower?.times(8) // Equivalent to 1/500 second
-            }
-
-            ExposureMode.EXPOSURE_1_250 -> {
-                range?.lower?.times(16)// Equivalent to 1/250 second
-            }
-
-            ExposureMode.EXPOSURE_1_125 -> {
-                range?.lower?.times(32)// Equivalent to 1/125 second
-            }
-
-            ExposureMode.EXPOSURE_1_60 -> {
-                range?.lower?.times(64) // Equivalent to 1/60 second
-            }
-
-            ExposureMode.EXPOSURE_1_30 -> {
-                range?.lower?.times(128) // Equivalent to 1/30 second
-            }
-
-            ExposureMode.EXPOSURE_1_15 -> {
-                range?.upper?.div(256) // Equivalent to 1/15 second
-            }
-
-            ExposureMode.EXPOSURE_1_8 -> {
-                range?.lower?.times(256) // Equivalent to 1/8 second
-            }
-
-            ExposureMode.EXPOSURE_1_4 -> {
-                range?.upper?.div(128) // Equivalent to 1/4 second
-            }
-
-            ExposureMode.EXPOSURE_1_2 -> {
-                range?.upper?.div(64) // Equivalent to 1/2 second
-            }
-
-            ExposureMode.EXPOSURE_1 -> {
-                range?.upper?.div(32) // Equivalent to 1 second
-            }
-
-            ExposureMode.EXPOSURE_2 -> {
-                range?.upper?.div(16) // Equivalent to 2 seconds
-            }
-
-            ExposureMode.EXPOSURE_4 -> {
-                range?.upper?.div(8) // Equivalent to 4 seconds
-            }
-
-            ExposureMode.EXPOSURE_8 -> {
-                range?.upper?.div(4) // Equivalent to 8 seconds
-            }
-
-            ExposureMode.EXPOSURE_15 -> {
-                range?.upper?.div(2) // Equivalent to 15 seconds
-            }
-
-            ExposureMode.EXPOSURE_30 -> {
-                range?.upper // Equivalent to 30 seconds
-            }
-
-            else -> {
-                range?.upper?.div(256)
-            }
+        val exposureTimeInNs = when (exposureTime) {
+            ExposureMode.EXPOSURE_1_4000 -> 1_000_000_000L / 4000
+            ExposureMode.EXPOSURE_1_2000 -> 1_000_000_000L / 2000
+            ExposureMode.EXPOSURE_1_1000 -> 1_000_000_000L / 1000
+            ExposureMode.EXPOSURE_1_500 -> 1_000_000_000L / 500
+            ExposureMode.EXPOSURE_1_250 -> 1_000_000_000L / 250
+            ExposureMode.EXPOSURE_1_125 -> 1_000_000_000L / 125
+            ExposureMode.EXPOSURE_1_60 -> 1_000_000_000L / 60
+            ExposureMode.EXPOSURE_1_30 -> 1_000_000_000L / 30
+            ExposureMode.EXPOSURE_1_15 -> 1_000_000_000L / 15
+            ExposureMode.EXPOSURE_1_8 -> 1_000_000_000L / 8
+            ExposureMode.EXPOSURE_1_4 -> 1_000_000_000L / 4
+            ExposureMode.EXPOSURE_1_2 -> 1_000_000_000L / 2
+            ExposureMode.EXPOSURE_1 -> 1_000_000_000L
+            ExposureMode.EXPOSURE_2 -> 1_000_000_000L * 2
+            ExposureMode.EXPOSURE_4 -> 1_000_000_000L * 4
+            ExposureMode.EXPOSURE_8 -> 1_000_000_000L * 8
+            ExposureMode.EXPOSURE_15 -> 1_000_000_000L * 15
+            ExposureMode.EXPOSURE_30 -> 1_000_000_000L * 30
+            else -> null
         }
-//            captureBuilder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_OFF)
-        captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CONTROL_AE_MODE_OFF)
-        captureBuilder.set(CaptureRequest.SENSOR_EXPOSURE_TIME, time)
-        captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
-        Log.d(TAG, "setExposureTime: called $time range$range")
 
+        exposureTimeInNs?.let { calculatedTime ->
+            val scaledTime = calculatedTime.coerceIn(range?.lower, range?.upper)
+            Log.d(TAG, "setExposureTime: called $scaledTime range$range")
+
+            captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CONTROL_AE_MODE_OFF)
+            captureBuilder.set(CaptureRequest.SENSOR_EXPOSURE_TIME, scaledTime)
+            captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
+        }
     }
 
 
