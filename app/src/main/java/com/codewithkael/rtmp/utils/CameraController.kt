@@ -1,9 +1,5 @@
-import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Matrix
 import android.graphics.Rect
-import android.graphics.RectF
-import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraAccessException
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics
@@ -17,9 +13,6 @@ import android.hardware.camera2.params.RggbChannelVector
 import android.hardware.camera2.params.TonemapCurve
 import android.util.Log
 import android.util.Range
-import android.util.Size
-import android.view.Surface
-import android.view.WindowManager
 import com.codewithkael.rtmp.utils.CameraInfoModel
 import com.codewithkael.rtmp.utils.ExposureMode
 import com.codewithkael.rtmp.utils.fromPercent
@@ -56,7 +49,8 @@ class CameraController(
     }
 
     fun updateCameraInfo(info: CameraInfoModel, exposureUpdated: Boolean) {
-        val availableApertures = getCameraCharacteristics().get(CameraCharacteristics.LENS_INFO_AVAILABLE_APERTURES)
+        val availableApertures =
+            getCameraCharacteristics().get(CameraCharacteristics.LENS_INFO_AVAILABLE_APERTURES)
         Log.d(TAG, "updateCameraInfo aaa : ${availableApertures?.toList()}")
         try {
 //            setCustomWhiteBalance(info.red, info.green, info.blue)
@@ -91,38 +85,48 @@ class CameraController(
             } else {
                 info.contrast
             }
-            adjustGammaAndContrast2(gama,contrast)
+            adjustGammaAndContrast2(gama, contrast)
 //            if (info.flashLight) turnOnFlash() else turnOffFlash()
 
             if (info.isAutoWhiteBalance) {
                 setAutoWhiteBalanceOn()
-            } else{
+            } else {
                 setCustomWhiteBalance(info.red, info.green, info.blue)
             }
 
-            if (info.flashLight){
-                setupBlackAndWhiteMode()
-            }else{
-                setupBlackAndWhiteModeOff()
-            }
-//            //focus mode
+            //            //focus mode
             val focus = if (info.focusPercent <= 0.1f) {
                 0.1f
             } else {
                 info.focusPercent
             }
-            setCustomFocusPercent2(focus * 100)
+            turnOnFlash()
+            if (info.flashLight) {
+                setAutoFocusForContinousOn()
+            } else {
+                setCustomFocusPercent2(focus * 100)
+            }
+
+
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    private fun setupBlackAndWhiteMode() {
-        captureBuilder.set(CaptureRequest.CONTROL_EFFECT_MODE, CaptureRequest.CONTROL_EFFECT_MODE_MONO)
+    private fun setAutoFocusForContinousOn() {
+        captureBuilder.set(
+            CaptureRequest.CONTROL_AF_MODE,
+//            CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE // Use CONTROL_AF_MODE_CONTINUOUS_VIDEO for video
+            CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO // Use CONTROL_AF_MODE_CONTINUOUS_VIDEO for video
+        )
         captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
     }
-    private fun setupBlackAndWhiteModeOff() {
-        captureBuilder.set(CaptureRequest.CONTROL_EFFECT_MODE, CaptureRequest.CONTROL_EFFECT_MODE_OFF)
+
+    private fun setAutoFocusForContinousOff() {
+        captureBuilder.set(
+            CaptureRequest.CONTROL_EFFECT_MODE,
+            CaptureRequest.CONTROL_EFFECT_MODE_OFF
+        )
         captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
     }
 
@@ -330,7 +334,6 @@ class CameraController(
     }
 
 
-
     /**
      * Set the exposure compensation value of the camera.
      *
@@ -452,7 +455,9 @@ class CameraController(
     private fun setCustomFocusPercent2(percent: Float) {
         try {
             val characteristics = getCameraCharacteristics()
-            val minFocusDistance = characteristics.get(CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE) ?: return
+            val minFocusDistance =
+                characteristics.get(CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE)
+                    ?: return
 
             // Convert the input percent to a focus distance value
             // 0% corresponds to infinity, and 100% to the minimum focus distance
@@ -528,9 +533,15 @@ class CameraController(
 
             // Apply Contrast Adjustment
             val contrastCorrectedValue = if (gammaCorrectedValue < mid) {
-                (pow((gammaCorrectedValue / mid).toDouble(), adjustedContrast.toDouble()) * mid).toFloat()
+                (pow(
+                    (gammaCorrectedValue / mid).toDouble(),
+                    adjustedContrast.toDouble()
+                ) * mid).toFloat()
             } else {
-                (1 - pow(((1 - gammaCorrectedValue) / mid).toDouble(), adjustedContrast.toDouble()) * mid).toFloat()
+                (1 - pow(
+                    ((1 - gammaCorrectedValue) / mid).toDouble(),
+                    adjustedContrast.toDouble()
+                ) * mid).toFloat()
             }
 
             curve[i * 2] = originalValue
@@ -559,13 +570,20 @@ class CameraController(
             val originalValue = i / 255.0f
 
             // Apply Gamma Adjustment
-            val gammaCorrectedValue = pow(originalValue.toDouble(), (1.0f / adjustedGamma).toDouble()).toFloat()
+            val gammaCorrectedValue =
+                pow(originalValue.toDouble(), (1.0f / adjustedGamma).toDouble()).toFloat()
 
             // Apply Contrast Adjustment
             val contrastCorrectedValue = if (gammaCorrectedValue < mid) {
-                (pow((gammaCorrectedValue / mid).toDouble(), adjustedContrast.toDouble()) * mid).toFloat()
+                (pow(
+                    (gammaCorrectedValue / mid).toDouble(),
+                    adjustedContrast.toDouble()
+                ) * mid).toFloat()
             } else {
-                (1 - pow(((1 - gammaCorrectedValue) / mid).toDouble(), adjustedContrast.toDouble()) * mid).toFloat()
+                (1 - pow(
+                    ((1 - gammaCorrectedValue) / mid).toDouble(),
+                    adjustedContrast.toDouble()
+                ) * mid).toFloat()
             }
 
             curve[i * 2] = originalValue
@@ -583,7 +601,8 @@ class CameraController(
     }
 
     fun setGammaAndContrastRanges(cameraCharacteristics: CameraCharacteristics): Pair<ClosedFloatingPointRange<Float>, ClosedFloatingPointRange<Float>> {
-        val maxCurvePoints = cameraCharacteristics.get(CameraCharacteristics.TONEMAP_MAX_CURVE_POINTS)
+        val maxCurvePoints =
+            cameraCharacteristics.get(CameraCharacteristics.TONEMAP_MAX_CURVE_POINTS)
         val SOME_THRESHOLD = 10 // Example threshold, adjust based on your requirements
 
         val gammaRange = if (maxCurvePoints != null && maxCurvePoints >= SOME_THRESHOLD) {
@@ -600,7 +619,6 @@ class CameraController(
 
         return Pair(gammaRange, contrastRange)
     }
-
 
 
 //    fun adjustGamma(gamma: Float) {
