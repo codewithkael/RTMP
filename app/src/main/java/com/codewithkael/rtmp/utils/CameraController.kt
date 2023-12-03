@@ -55,7 +55,8 @@ class CameraController(
         try {
             setCustomWhiteBalance(info.red, info.green, info.blue)
 
-            if (!exposureUpdated) {
+//            if (!exposureUpdated) {
+            if (!info.flashLight) {
                 setExposureTime(info.shutterSpeed)
                 getIsoRange()?.let { range ->
                     Log.d(TAG, "updateCameraInfo: isoRange $range")
@@ -100,11 +101,12 @@ class CameraController(
             } else {
                 info.focusPercent
             }
-            if (info.flashLight) {
-                setAutoFocusForContinousOn()
-            } else {
-                setCustomFocusPercent2(focus * 100)
-            }
+            setCustomFocusPercent2(focus * 100)
+//            if (info.flashLight) {
+//                setAutoFocusForContinousOn()
+//            } else {
+//                setCustomFocusPercent2(focus * 100)
+//            }
 
 
         } catch (e: Exception) {
