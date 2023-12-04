@@ -7,16 +7,19 @@ import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CameraMetadata
 import android.hardware.camera2.CameraMetadata.CONTROL_AE_MODE_OFF
 import android.hardware.camera2.CameraMetadata.CONTROL_AE_MODE_ON
+import android.hardware.camera2.CaptureFailure
 import android.hardware.camera2.CaptureRequest
+import android.hardware.camera2.CaptureResult
+import android.hardware.camera2.TotalCaptureResult
 import android.hardware.camera2.params.MeteringRectangle
 import android.hardware.camera2.params.RggbChannelVector
 import android.hardware.camera2.params.TonemapCurve
+import android.os.Handler
 import android.util.Log
 import android.util.Range
 import com.codewithkael.rtmp.utils.CameraInfoModel
 import com.codewithkael.rtmp.utils.ExposureMode
 import com.codewithkael.rtmp.utils.fromPercent
-import com.haishinkit.view.HkSurfaceView
 import java.lang.StrictMath.pow
 import kotlin.math.max
 import kotlin.math.min
@@ -34,7 +37,7 @@ class CameraController(
     private val cameraManager: CameraManager,
     private val captureSession: CameraCaptureSession,
     private val captureBuilder: CaptureRequest.Builder,
-    private val textureView: HkSurfaceView
+    private val handler: Handler,
 ) {
     private val TAG = "CameraController"
 
@@ -51,12 +54,12 @@ class CameraController(
     fun updateCameraInfo(info: CameraInfoModel, exposureUpdated: Boolean) {
 //        val availableApertures =
 //            getCameraCharacteristics().get(CameraCharacteristics.LENS_INFO_AVAILABLE_APERTURES)
-//        Log.d(TAG, "updateCameraInfo aaa : ${availableApertures?.toList()}")
+//        Log.d(TAG, "updateCameraInfo aaa : ${isHDRSupported()}")
         try {
             setCustomWhiteBalance(info.red, info.green, info.blue)
 
-//            if (!exposureUpdated) {
-            if (!info.flashLight) {
+            if (!exposureUpdated) {
+//            if (!info.flashLight) {
                 setExposureTime(info.shutterSpeed)
                 getIsoRange()?.let { range ->
                     Log.d(TAG, "updateCameraInfo: isoRange $range")
@@ -101,17 +104,36 @@ class CameraController(
             } else {
                 info.focusPercent
             }
+//            turnOnFlash()
             setCustomFocusPercent2(focus * 100)
+            setJpegQuality(100)
+//            setFrameDuration(33333333)
+//            setAERegion(focus)
 //            if (info.flashLight) {
 //                setAutoFocusForContinousOn()
 //            } else {
 //                setCustomFocusPercent2(focus * 100)
 //            }
-
+//            setHDRMode()
 
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+
+    fun setJpegQuality(quality: Int) {
+        if (quality !in 0..100) {
+            throw IllegalArgumentException("JPEG quality must be between 0 and 100")
+        }
+
+        captureBuilder.set(
+            CaptureRequest.COLOR_CORRECTION_ABERRATION_MODE,
+            CaptureRequest.COLOR_CORRECTION_ABERRATION_MODE_HIGH_QUALITY
+        )
+
+        captureBuilder.set(CaptureRequest.JPEG_QUALITY, quality.toByte())
+        captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
+
     }
 
     private fun setAutoFocusForContinousOn() {
@@ -143,6 +165,37 @@ class CameraController(
 
     }
 
+    private fun setHDRMode() {
+        try {
+            // Create a CaptureRequest builder for still image capture
+            captureBuilder.set(
+                CaptureRequest.CONTROL_MODE,
+                CaptureRequest.CONTROL_MODE_USE_SCENE_MODE
+            )
+            captureBuilder.set(
+                CaptureRequest.CONTROL_SCENE_MODE,
+                CaptureRequest.CONTROL_SCENE_MODE_HDR
+            )
+            // Capture the image with HDR
+            captureSession.capture(captureBuilder.build(), null, null)
+        } catch (e: CameraAccessException) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun isHDRSupported(): Boolean {
+        try {
+            val characteristics = cameraManager.getCameraCharacteristics(cameraId)
+            val availableSceneModes =
+                characteristics.get(CameraCharacteristics.CONTROL_AVAILABLE_SCENE_MODES)
+
+            return availableSceneModes?.contains(CameraCharacteristics.CONTROL_SCENE_MODE_HDR) == true
+        } catch (e: CameraAccessException) {
+            e.printStackTrace()
+        }
+        return false
+    }
+
     private fun setCustomWhiteBalance(redGain: Float, greenGain: Float, blueGain: Float) {
 
         try {
@@ -155,7 +208,7 @@ class CameraController(
             val gains = RggbChannelVector(redGain, greenGain, greenGain, blueGain)
             captureBuilder.set(CaptureRequest.COLOR_CORRECTION_GAINS, gains)
             captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
-            Log.d(TAG, "setCustomWhiteBalance: called")
+//            Log.d(TAG, "setCustomWhiteBalance: called")
         } catch (e: CameraAccessException) {
             Log.d(TAG, "setCustomWhiteBalance: ${e.message}")
             e.printStackTrace()
@@ -217,7 +270,6 @@ class CameraController(
     private fun setIso(isoValue: Int) {
         val isoRange = getIsoRange()
         if (isoRange != null && isoValue in isoRange) {
-//            captureBuilder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_OFF)
             captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CONTROL_AE_MODE_OFF)
 
             captureBuilder.set(CaptureRequest.SENSOR_SENSITIVITY, isoValue)
@@ -271,7 +323,7 @@ class CameraController(
 
         exposureTimeInNs?.let { calculatedTime ->
             val scaledTime = calculatedTime.coerceIn(range?.lower, range?.upper)
-            Log.d(TAG, "setExposureTime: called $scaledTime range$range")
+//            Log.d(TAG, "setExposureTime: called $scaledTime range$range")
 
             captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CONTROL_AE_MODE_OFF)
             captureBuilder.set(CaptureRequest.SENSOR_EXPOSURE_TIME, scaledTime)
@@ -297,15 +349,71 @@ class CameraController(
                 exposureCompensationValue, -20, 20,
                 aeCompensationRange!!.lower, aeCompensationRange.upper
             )
-            Log.d(TAG, "setExposureCompensation: range chosen $convertedVersion")
-//            captureBuilder.set(CaptureRequest.CONTROL_MODE, CaptureRequest.CONTROL_MODE_AUTO)
+//            Log.d(TAG, "setExposureCompensation: range chosen $convertedVersion")
             captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CONTROL_AE_MODE_ON)
 
             captureBuilder.set(
                 CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, convertedVersion
             )
-            Log.d(TAG, "setExposureCompensation: called $convertedVersion")
-            captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
+//            Log.d(TAG, "setExposureCompensation: called $convertedVersion")
+            captureSession.setRepeatingRequest(
+                captureBuilder.build(),
+                object : CameraCaptureSession.CaptureCallback() {
+                    override fun onCaptureCompleted(
+                        session: CameraCaptureSession,
+                        request: CaptureRequest,
+                        result: TotalCaptureResult
+                    ) {
+                        super.onCaptureCompleted(session, request, result)
+
+                        val isoValue = result.get(CaptureResult.SENSOR_SENSITIVITY)
+                        Log.d(TAG, "ISO: $isoValue")
+
+                        // Log Shutter Speed
+                        val shutterSpeed = result.get(CaptureResult.SENSOR_EXPOSURE_TIME)
+                        Log.d(TAG, "Shutter Speed: $shutterSpeed")
+
+                        // Log Frame Duration
+                        val frameDuration = result.get(CaptureResult.SENSOR_FRAME_DURATION)
+                        Log.d(TAG, "Frame Duration: $frameDuration")
+
+                        // Log AE Mode
+                        val aeMode = result.get(CaptureResult.CONTROL_AE_MODE)
+                        Log.d(TAG, "AE Mode: $aeMode")
+
+                        // Log AE Exposure Compensation
+                        val aeExposureCompensation =
+                            result.get(CaptureResult.CONTROL_AE_EXPOSURE_COMPENSATION)
+                        Log.d(TAG, "AE Exposure Compensation: $aeExposureCompensation")
+
+                        // Log AE Lock
+                        val aeLock = result.get(CaptureResult.CONTROL_AE_LOCK)
+                        Log.d(TAG, "AE Lock: $aeLock")
+
+                        // Log AE State
+                        val aeState = result.get(CaptureResult.CONTROL_AE_STATE)
+                        Log.d(TAG, "AE State: $aeState")
+
+                        // Log AE Regions
+                        val aeRegions = result.get(CaptureResult.CONTROL_AE_REGIONS)
+                            ?.joinToString { it.toString() }
+                        Log.d(TAG, "AE Regions: $aeRegions")
+
+                    }
+
+                    override fun onCaptureFailed(
+                        session: CameraCaptureSession,
+                        request: CaptureRequest,
+                        failure: CaptureFailure
+                    ) {
+                        super.onCaptureFailed(session, request, failure)
+                        Log.d(TAG, "onCaptureFailed: ${failure.reason}")
+                        // Handle capture failure
+                    }
+                },
+                handler
+            )
+
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -419,16 +527,52 @@ class CameraController(
         }
     }
 
-    /**
-     * Set metering regions for the camera.
-     *
-     * @param regions Array of MeteringRectangle objects representing the regions.
-     */
-    // Function to set metering regions
-    fun setMeteringRegions(regions: Array<MeteringRectangle>) {
-        captureBuilder.set(CaptureRequest.CONTROL_AF_REGIONS, regions)
-        captureBuilder.set(CaptureRequest.CONTROL_AE_REGIONS, regions)
+
+    private fun setFrameDuration(percent: Int) {
+
+        val maxFrameDuration =
+            getMaxSupportedFrameDuration() // Get the maximum frame duration supported by the camera
+
+
+        Log.d(TAG, "setFrameDuration: $maxFrameDuration")
+        Log.d(TAG, "setFrameDuration2: ${(maxFrameDuration!! * percent).toLong()}")
+
+        captureBuilder.set(CaptureRequest.SENSOR_FRAME_DURATION, (percent).toLong())
+        // Apply other settings and start the capture session as needed...
         captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
+
+    }
+
+    private fun getMaxSupportedFrameDuration(): Long? {
+        val characteristics = cameraManager.getCameraCharacteristics(cameraId)
+        return characteristics.get(CameraCharacteristics.SENSOR_INFO_MAX_FRAME_DURATION)
+    }
+
+    fun setAERegion(percent: Float) {
+        try {
+            val sensorArraySize =
+                getCameraCharacteristics().get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE)
+
+            // Calculate the AE region size and position based on the percentage
+            val regionWidth = (sensorArraySize?.width()?.times(percent))?.toInt()
+            val regionHeight = (sensorArraySize?.height()?.times(percent))?.toInt()
+            val regionX = (regionWidth?.let { sensorArraySize.width().minus(it) })?.div(2)
+            val regionY = (regionHeight?.let { sensorArraySize.height().minus(it) })?.div(2)
+
+            val aeRegion = MeteringRectangle(
+                regionX!!,
+                regionY!!,
+                regionWidth,
+                regionHeight,
+                MeteringRectangle.METERING_WEIGHT_MAX
+            )
+
+            // Set the AE region in the capture request
+            captureBuilder.set(CaptureRequest.CONTROL_AE_REGIONS, arrayOf(aeRegion))
+
+        } catch (e: CameraAccessException) {
+            e.printStackTrace()
+        }
     }
 
     /**

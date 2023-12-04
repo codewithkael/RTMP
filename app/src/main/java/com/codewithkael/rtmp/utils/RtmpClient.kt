@@ -8,6 +8,8 @@ import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CaptureRequest.Builder
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import com.codewithkael.rtmp.remote.UserApi
 import com.codewithkael.rtmp.utils.Constants.BASE_RTMP_URL
@@ -58,6 +60,7 @@ class RtmpClient(
             null
         }
     }
+    val mainHandler = Handler(Looper.getMainLooper())
 
     private var isCameraOpen = false
     private var isPublishing = false
@@ -235,7 +238,7 @@ class RtmpClient(
                     session?.let { it1 ->
                         CameraController(
                             0.toString(),
-                            it, it1, builder, surfaceView
+                            it, it1, builder, mainHandler
                         )
                     }
                 }
@@ -258,7 +261,7 @@ class RtmpClient(
                             if (cameraManager != null && session != null && requestBuilder != null) {
                                 cameraController = CameraController(
                                     0.toString(), cameraManager!!, session!!, requestBuilder!!,
-                                    surfaceView
+                                    mainHandler
                                 )
                                 isCameraOpen = true
                                 delay(1000)

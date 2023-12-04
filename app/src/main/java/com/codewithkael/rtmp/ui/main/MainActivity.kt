@@ -189,7 +189,7 @@ class MainActivity : AppCompatActivity(), MainService.Listener {
 
         }
         if (MainService.isServiceRunning) {
-//            finishAffinity()
+            finishAffinity()
         }
         if (sharedPreference.getToken().isNullOrEmpty()) {
             this@MainActivity.startActivity(Intent(this@MainActivity, LoginActivity::class.java))
@@ -197,7 +197,7 @@ class MainActivity : AppCompatActivity(), MainService.Listener {
             CoroutineScope(Dispatchers.IO).launch {
                 viewModel.init({ isDone, response ->
                     if (isDone && response != null) {
-//                        finishAffinity()
+                        finishAffinity()
                         MainService.currentUrl = "$BASE_RTMP_URL${response.streamKey}"
                         views.urlTv.setText(MainService.currentUrl)
 
