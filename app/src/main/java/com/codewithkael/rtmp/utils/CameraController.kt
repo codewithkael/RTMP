@@ -20,6 +20,10 @@ import android.util.Range
 import com.codewithkael.rtmp.utils.CameraInfoModel
 import com.codewithkael.rtmp.utils.ExposureMode
 import com.codewithkael.rtmp.utils.fromPercent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.lang.StrictMath.pow
 import kotlin.math.max
 import kotlin.math.min
@@ -52,6 +56,7 @@ class CameraController(
     }
 
     fun updateCameraInfo(info: CameraInfoModel, exposureUpdated: Boolean) {
+
 //        val availableApertures =
 //            getCameraCharacteristics().get(CameraCharacteristics.LENS_INFO_AVAILABLE_APERTURES)
 //        Log.d(TAG, "updateCameraInfo aaa : ${isHDRSupported()}")
@@ -73,7 +78,12 @@ class CameraController(
             }
 
 
-            setZoom(info.zoomLevel.toFloat())
+            if (info.zoomLevel>=91){
+                setZoom(91)
+            }else{
+                setZoom(info.zoomLevel+9)
+            }
+
             val gama = if (info.gamma <= 0.1f) {
                 0.1f
             } else if (info.gamma >= 5.0f) {
@@ -220,12 +230,25 @@ class CameraController(
      *
      * @param zoomLevel The desired zoom level (should be between 1.0 and maxZoom).
      */
-    // Function to set zoom level (zoomLevel should be between 1.0 and maxZoom)
-    private fun setZoom(zoomLevel: Float) {
+    private fun setZoom(zoomLevel: Int) {
+        // Ensure the input is within 1-100
+        val safeZoomLevel = zoomLevel.coerceIn(1, 100)
+
         val characteristics = getCameraCharacteristics()
         val maxZoom = characteristics.get(CameraCharacteristics.SCALER_AVAILABLE_MAX_DIGITAL_ZOOM)
-        if (maxZoom != null) {
-            val zoomRect = calculateZoomRect(characteristics, zoomLevel)
+
+        maxZoom?.let {
+            // Calculate the zoom ratio
+            val zoomRatio = safeZoomLevel / 100f * it
+
+            // Define a minimum effective zoom ratio
+            val minEffectiveSize = 0.1f // Ensure this is a Float to match zoomRatio's type
+
+            // Use the larger of zoomRatio and minEffectiveSize
+            val effectiveZoomRatio = maxOf(zoomRatio, minEffectiveSize)
+
+            val zoomRect = calculateZoomRect(characteristics, effectiveZoomRatio)
+            Log.d(TAG, "setZoom: max zoom $it, current zoom $effectiveZoomRatio zoom rect $zoomRect")
             captureBuilder.set(CaptureRequest.SCALER_CROP_REGION, zoomRect)
             captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
         }
