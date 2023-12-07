@@ -20,10 +20,6 @@ import android.util.Range
 import com.codewithkael.rtmp.utils.CameraInfoModel
 import com.codewithkael.rtmp.utils.ExposureMode
 import com.codewithkael.rtmp.utils.fromPercent
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.lang.StrictMath.pow
 import kotlin.math.max
 import kotlin.math.min
@@ -78,10 +74,10 @@ class CameraController(
             }
 
 
-            if (info.zoomLevel>=91){
+            if (info.zoomLevel >= 91) {
                 setZoom(91)
-            }else{
-                setZoom(info.zoomLevel+9)
+            } else {
+                setZoom(info.zoomLevel + 9)
             }
 
             val gama = if (info.gamma <= 0.1f) {
@@ -248,7 +244,10 @@ class CameraController(
             val effectiveZoomRatio = maxOf(zoomRatio, minEffectiveSize)
 
             val zoomRect = calculateZoomRect(characteristics, effectiveZoomRatio)
-            Log.d(TAG, "setZoom: max zoom $it, current zoom $effectiveZoomRatio zoom rect $zoomRect")
+            Log.d(
+                TAG,
+                "setZoom: max zoom $it, current zoom $effectiveZoomRatio zoom rect $zoomRect"
+            )
             captureBuilder.set(CaptureRequest.SCALER_CROP_REGION, zoomRect)
             captureSession.setRepeatingRequest(captureBuilder.build(), null, null)
         }
