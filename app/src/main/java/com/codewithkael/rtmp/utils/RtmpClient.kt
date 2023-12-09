@@ -95,28 +95,20 @@ class RtmpClient(
         if (currentCameraInfo?.fps != info.fps || currentCameraInfo?.bitrate != info.bitrate
             || currentCameraInfo?.width != info.width || currentCameraInfo?.height != info.height
         ) {
-            Log.d(TAG, "handleStartOrUpdate: kael start called 1")
             CoroutineScope(Dispatchers.IO).launch {
                 stopPublishing()
-                delay(1000)
+//                delay(1000)
                 startPublishing(info, url)
             }
 
         } else {
-            Log.d(TAG, "handleStartOrUpdate: kael start called 2")
-
             if (!isPublishing) {
-                Log.d(TAG, "handleStartOrUpdate: kael start called 3")
-
                 CoroutineScope(Dispatchers.IO).launch {
                     stopPublishing()
-                    delay(1000)
+//                    delay(1000)
                     startPublishing(info, url)
                 }
             } else {
-                Log.d(TAG, "handleStartOrUpdate: kael start called 4")
-                Log.d(TAG, "startPublishing: update publishing 2 call shod")
-
                 updatePublishing(
                     info,
                     info.exposureCompensation != currentCameraInfo?.exposureCompensation
@@ -129,15 +121,11 @@ class RtmpClient(
     }
 
     private fun updatePublishing(info: CameraInfoModel, isExposureUpdated: Boolean) {
-        Log.d(TAG, "updatePublishing: called $info")
         try {
-//            rotateCameraPreview(info.orientation)
             CoroutineScope(Dispatchers.IO).launch {
                 getCameraController()?.updateCameraInfo(info, isExposureUpdated)
             }
         } catch (e: Exception) {
-            Log.d(TAG, "updatePublishing: error dad $info")
-
             e.printStackTrace()
         }
     }
@@ -298,16 +286,17 @@ class RtmpClient(
         isPublishing = event.data.toString().contains("code=NetConnection.Connect.Success")
                 && event.type == "rtmpStatus"
 
-        if (isPublishing) {
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    userApi.resetStream(key ?: "")
-                } catch (e: Exception) {
-                    Log.d(TAG, "handleEvent: ${e.message}")
-                    e.printStackTrace()
-                }
-            }
-        }
+//        if (isPublishing) {
+//            CoroutineScope(Dispatchers.IO).launch {
+////                delay(3000)
+//                try {
+//                    userApi.resetStream(key ?: "")
+//                } catch (e: Exception) {
+//                    Log.d(TAG, "handleEvent: ${e.message}")
+//                    e.printStackTrace()
+//                }
+//            }
+//        }
         Log.d(TAG, "handleStartOrUpdate: kael publisher setter 4 $isPublishing")
         Log.d(TAG, "handleStartOrUpdate: kael  ${event.data}")
         Log.d(TAG, "handleStartOrUpdate: kael  ${event.type}")
@@ -317,7 +306,7 @@ class RtmpClient(
         ) {
             CoroutineScope(Dispatchers.IO).launch {
 
-                delay(3000)
+//                delay(3000)
                 if (!isPublishing) {
                     stopPublishing()
                     delay(1000)
