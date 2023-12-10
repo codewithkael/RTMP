@@ -33,7 +33,8 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainService : LifecycleService() {
 
-    @Inject lateinit var serviceRepository: MainServiceRepository
+    @Inject
+    lateinit var serviceRepository: MainServiceRepository
 
     private val tag = "MainService-MainService2"
 
@@ -53,14 +54,11 @@ class MainService : LifecycleService() {
     @Inject
     lateinit var mySharedPreference: MySharedPreference
 
-    @Inject
-    lateinit var socketClient: SocketClient
-
     private val userApi: UserApi by lazy {
         Constants.getRetrofitObject(mySharedPreference.getToken() ?: "").create(UserApi::class.java)
     }
 
-    private var latestConfig:CameraInfoModel = CameraInfoModel()
+    private var latestConfig: CameraInfoModel = CameraInfoModel()
 
 
     private lateinit var notificationManager: NotificationManager
@@ -135,8 +133,8 @@ class MainService : LifecycleService() {
     private fun handleStopService() {
         startServiceWithNotification()
         isServiceRunning = false
-        socketClient.unregisterClients()
-        socketClient.closeSocket()
+        SocketClient.unregisterClients()
+        SocketClient.closeSocket()
         rtmpClient?.stop()
         stopSelf()
         stopForeground(true)
@@ -154,7 +152,7 @@ class MainService : LifecycleService() {
 
             surface?.let { srf ->
                 rtmpClient = RtmpClient(this@MainService, srf, userApi)
-                socketClient.initialize(object : SocketClient.Listener {
+                SocketClient.initialize(object : SocketClient.Listener {
                     override fun onConnectionStateChanged(state: SocketState) {
                         Log.d(tag, "onNewMessageReceivedConnected: $state")
 
@@ -179,7 +177,10 @@ class MainService : LifecycleService() {
                                             if (!isUiActive && !it) {
                                                 openAppReopenCamera(cameraInfoModel, key)
                                             }
-                                            Log.d(tag, "2onNewMessageReceived: camera is opened $it")
+                                            Log.d(
+                                                tag,
+                                                "2onNewMessageReceived: camera is opened $it"
+                                            )
                                         }
                                     }
 
@@ -196,7 +197,10 @@ class MainService : LifecycleService() {
                                                     key
                                                 )
                                             }
-                                            Log.d(tag, "3onNewMessageReceived: camera is opened $it")
+                                            Log.d(
+                                                tag,
+                                                "3onNewMessageReceived: camera is opened $it"
+                                            )
                                         }
                                     }
 
@@ -208,8 +212,8 @@ class MainService : LifecycleService() {
 
                     override fun onNewMessageReceived(message: String) {
                         Log.d(tag, "onNewMessageReceived: $message")
-                        if (message.contains("restart")){
-                                rtmpClient?.restartConnection()
+                        if (message.contains("restart")) {
+                            rtmpClient?.restartConnection()
                             return
                         }
                         CoroutineScope(Dispatchers.IO).launch {
@@ -239,7 +243,7 @@ class MainService : LifecycleService() {
                         )
                     }
 
-                })
+                }, mySharedPreference)
             } ?: kotlin.run {
                 handleStopService()
             }

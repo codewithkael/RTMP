@@ -18,21 +18,17 @@ enum class SocketState {
     Connecting, Connected
 }
 
-@Singleton
-class SocketClient @Inject constructor(
-    private val preference: MySharedPreference
-) {
+object SocketClient  {
 
     private val TAG = "MainService-socket"
-    companion object {
-        private var socket: WebSocketClient? = null
-    }
+
+    private var socket: WebSocketClient? = null
 
     private val job = CoroutineScope(Dispatchers.IO)
     private var listener: Listener? = null
     private var isReconnectingStopped = false
 
-    fun initialize(listener: Listener) {
+    fun initialize(listener: Listener,preference: MySharedPreference) {
         Log.d(TAG, "initialize: ${Constants.getSocketUrl(preference.getToken()!!)}")
         CoroutineScope(Dispatchers.IO).launch {
 
@@ -56,7 +52,7 @@ class SocketClient @Inject constructor(
                         job.launch {
                             delay(5000)
                             if (!isReconnectingStopped){
-                                initialize(listener)
+                                initialize(listener,preference)
                             }
                         }
                     }
