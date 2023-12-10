@@ -65,13 +65,13 @@ class LoginActivity : AppCompatActivity() {
                         android.Manifest.permission.POST_NOTIFICATIONS,
                     ).request { allGranted, _, _ ->
                         if (allGranted) {
-                            if (!Settings.canDrawOverlays(this@LoginActivity)) {
-                                val intent = Intent(
-                                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                                    Uri.parse("package:$packageName")
-                                )
-                                startActivity(intent)
-                            } else {
+//                            if (!Settings.canDrawOverlays(this@LoginActivity)) {
+//                                val intent = Intent(
+//                                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+//                                    Uri.parse("package:$packageName")
+//                                )
+//                                startActivity(intent)
+//                            } else {
                                 CoroutineScope(Dispatchers.IO).launch {
                                     try {
                                         val result = userApi.login(
@@ -96,7 +96,7 @@ class LoginActivity : AppCompatActivity() {
                                         }
                                     }
                                 }
-                            }
+//                            }
 
                         } else {
                             Toast.makeText(

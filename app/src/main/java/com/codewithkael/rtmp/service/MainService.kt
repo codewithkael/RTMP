@@ -29,8 +29,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
+import javax.inject.Singleton
 
 @AndroidEntryPoint
+@Singleton
 class MainService : LifecycleService() {
 
     @Inject
@@ -89,18 +91,18 @@ class MainService : LifecycleService() {
             .addAction(R.drawable.ic_end_call, "Exit", pendingIntent)
 
         surface = HkSurfaceView(this)
-        val params = WindowManager.LayoutParams(
-            1,
-            1,
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, // This type is suitable for overlays
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-            PixelFormat.TRANSLUCENT
-        )
-        params.gravity = Gravity.TOP or Gravity.START
-        val windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        windowManager.addView(surface, params)
-        surface?.keepScreenOn = true
-//        surface?.setRotation(100f)
+//        val params = WindowManager.LayoutParams(
+//            1,
+//            1,
+//            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, // This type is suitable for overlays
+//            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+//            PixelFormat.TRANSLUCENT
+//        )
+//        params.gravity = Gravity.TOP or Gravity.START
+//        val windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+//        windowManager.addView(surface, params)
+//        surface?.keepScreenOn = true
+////        surface?.setRotation(100f)
         latestConfig = mySharedPreference.getCameraModel()
     }
 
@@ -110,7 +112,6 @@ class MainService : LifecycleService() {
             when (incomingIntent.action) {
                 MainServiceActions.START_SERVICE.name -> handleStartService(intent)
                 MainServiceActions.STOP_SERVICE.name -> handleStopService()
-//                MainServiceActions.UPDATE_CAMERA.name -> handleUpdateCamera()
                 else -> Unit
             }
         }
