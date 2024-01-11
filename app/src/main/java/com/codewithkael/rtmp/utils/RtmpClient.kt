@@ -28,7 +28,7 @@ import javax.inject.Singleton
 
 @Singleton
 class RtmpClient(
-    context: Context,
+    private val context: Context,
     private val surfaceView: HkSurfaceView,
     private val userApi: UserApi
 ) : Camera2Source.Listener, IEventListener {
@@ -36,7 +36,7 @@ class RtmpClient(
     private val TAG = "RtmpClient3"
 
     private var connection: RtmpConnection = RtmpConnection()
-    private var stream: RtmpStream = RtmpStream(connection)
+    private var localStream: RtmpStream = RtmpStream(connection)
     private var videoSource: Camera2Source = Camera2Source(context).apply {
         open(CameraCharacteristics.LENS_FACING_BACK)
     }
@@ -67,9 +67,9 @@ class RtmpClient(
     private var currentCameraInfo: CameraInfoModel? = null
 
     init {
-        stream.attachVideo(videoSource)
+        localStream.attachVideo(videoSource)
         connection.addEventListener(Event.RTMP_STATUS, this@RtmpClient)
-        surfaceView.attachStream(stream)
+        surfaceView.attachStream(localStream)
         videoSource.listener = this@RtmpClient
     }
 
@@ -133,13 +133,14 @@ class RtmpClient(
 
     private fun startPublishing(info: CameraInfoModel, url: String) {
         try {
-            stream.videoSetting.width = info.width // The width  of video output.
-            stream.videoSetting.height = info.height // The height  of video output.
-            stream.videoSetting.bitRate = info.bitrate // The bitRate of video output.
-            stream.videoSetting.frameRate = if (info.fps < 15) 15 else info.fps*2
-            stream.videoSetting.IFrameInterval = 2
+            localStream.attachVideo(videoSource)
+            localStream.videoSetting.width = info.width // The width  of video output.
+            localStream.videoSetting.height = info.height // The height  of video output.
+            localStream.videoSetting.bitRate = info.bitrate // The bitRate of video output.
+            localStream.videoSetting.frameRate = if (info.fps < 15) 15 else info.fps
+            localStream.videoSetting.IFrameInterval = 2
             connection.connect(url)
-            stream.publish(url.split("live/")[1])
+            localStream.publish(url.split("live/")[1])
             CoroutineScope(Dispatchers.IO).launch {
                 delay(3000)
                 if (requestBuilder == null || session == null || cameraManager == null) {
@@ -205,7 +206,7 @@ class RtmpClient(
     private fun stopPublishing() {
 
         try {
-            stream.close()
+            localStream.close()
             connection.close()
         } catch (e: Exception) {
             e.printStackTrace()
@@ -319,11 +320,12 @@ class RtmpClient(
     fun restartConnection(){
         try {
             CoroutineScope(Dispatchers.IO).launch {
-                stream.close()
+                localStream.close()
                 connection.close()
                 delay(1000)
+                localStream.attachVideo(videoSource)
                 connection.connect(url)
-                stream.publish(url.split("live/")[1])
+                localStream.publish(url.split("live/")[1])
             }
         }catch (e:Exception){
             e.printStackTrace()
@@ -331,8 +333,7 @@ class RtmpClient(
     }
     fun stop() {
         try {
-            videoSource.close()
-            stream.close()
+            localStream.close()
             connection.close()
         }catch (e:Exception){
             e.printStackTrace()

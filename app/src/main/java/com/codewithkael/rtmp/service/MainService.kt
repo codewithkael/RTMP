@@ -119,16 +119,22 @@ class MainService : LifecycleService() {
         return START_STICKY
     }
 
+    private fun handleRestartStream(){
+        surface = null
+        surface = HkSurfaceView(this)
+
+    }
+
 
     private fun openAppReopenCamera(info: CameraInfoModel, key: String?) {
-        startActivity(Intent(this@MainService, MainActivity::class.java).apply {
-            addFlags(FLAG_ACTIVITY_NEW_TASK)
-        })
-        rtmpClient?.start(info, key) {
-            if (it) {
-                listener?.cameraOpenedSuccessfully()
-            }
-        }
+//        startActivity(Intent(this@MainService, MainActivity::class.java).apply {
+//            addFlags(FLAG_ACTIVITY_NEW_TASK)
+//        })
+//        rtmpClient?.start(info, key) {
+//            if (it) {
+//                listener?.cameraOpenedSuccessfully()
+//            }
+//        }
     }
 
     private fun handleStopService() {
@@ -215,6 +221,7 @@ class MainService : LifecycleService() {
                         Log.d(tag, "onNewMessageReceived: $message")
                         if (message.contains("restart")) {
                             rtmpClient?.restartConnection()
+//                            stopAndRestartService()
                             return
                         }
                         CoroutineScope(Dispatchers.IO).launch {
@@ -250,6 +257,23 @@ class MainService : LifecycleService() {
             }
         }
     }
+
+    private fun stopAndRestartService() {
+        // Stop the service
+        handleStopService()
+
+        // Delay before restarting the service (adjust the delay as needed)
+        CoroutineScope(Dispatchers.IO).launch {
+            delay(5000)
+
+            // Restart the service
+            val startServiceIntent = Intent(this@MainService, MainService::class.java)
+            startServiceIntent.action = MainServiceActions.START_SERVICE.name
+            startService(startServiceIntent)
+        }
+    }
+
+
 
     private fun startServiceWithNotification() {
 
