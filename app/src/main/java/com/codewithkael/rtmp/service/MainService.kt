@@ -89,6 +89,8 @@ class MainService : LifecycleService() {
         ).setSmallIcon(R.mipmap.ic_launcher)
             .setOngoing(true)
             .addAction(R.drawable.ic_end_call, "Exit", pendingIntent)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setCategory(NotificationCompat.CATEGORY_CALL)
 
         surface = HkSurfaceView(this)
 //        val params = WindowManager.LayoutParams(
